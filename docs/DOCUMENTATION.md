@@ -64,6 +64,10 @@
 |--------|---------|--------|
 | `main` | Stable, reviewed work and project documentation. | Exists |
 | `development` | Backup of `main` taken just before each increment is merged, so the last checked version can always be restored. Not worked on directly. | Exists |
+
+| Tag | Points to |
+|-----|-----------|
+| `before-increment-1` | `main` before Increment 1 (initial commit) |
 | `feat/increment-1` | Increment 1 software and this documentation | Exists |
 | `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
 | `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
@@ -79,7 +83,11 @@
 ```bash
 git fetch origin
 git push origin origin/main:development
+git tag -a before-increment-N origin/main -m "main before increment N"
+git push origin before-increment-N
 ```
+
+The `development` branch holds only the latest backup; the `before-increment-N` tags keep every one. To see a past version: `git checkout before-increment-1`.
 
 To restore the backup: `git checkout -b fix/restore origin/development`, then open a pull request into `main`.
 

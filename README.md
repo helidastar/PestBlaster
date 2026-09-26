@@ -66,6 +66,26 @@ To open it on a phone, connect the phone to the same Wi-Fi and go to `http://<yo
 | `npm run reset-data` | Clear the database and photos |
 | `npm test` | Run the unit tests |
 
+## Branches & Versions
+
+| Branch / tag | What it is |
+|--------------|------------|
+| `main` | Stable, checked version of the project |
+| `development` | Backup of `main` taken right before each increment is merged |
+| `feat/<area>` | Work in progress, merged into `main` by pull request |
+| `before-increment-N` | Tag: permanent snapshot of `main` before increment N |
+
+Commit messages are one line: `type(area): what changed`, for example `feat(ui): add spray history tab`.
+
+Before merging an increment into `main`:
+
+```bash
+git fetch origin
+git push origin origin/main:development                 # update the backup branch
+git tag -a before-increment-2 origin/main -m "main before increment 2"
+git push origin before-increment-2                      # keep a permanent snapshot
+```
+
 ## Documentation
 
 > **The complete project documentation is in [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).**
