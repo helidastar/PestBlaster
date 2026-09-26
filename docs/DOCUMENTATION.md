@@ -63,6 +63,7 @@
 | Branch | Purpose | Status |
 |--------|---------|--------|
 | `main` | Stable, reviewed work and project documentation. | Exists |
+| `development` | Backup of `main` taken just before each increment is merged, so the last checked version can always be restored. Not worked on directly. | Exists |
 | `feat/increment-1` | Increment 1 software and this documentation | Exists |
 | `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
 | `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
@@ -72,6 +73,15 @@
 **Commit messages:** one line, `type(area): what changed`, for example `feat(ui): add spray history tab`. Types: `feat`, `fix`, `docs`, `test`, `chore`, `refactor`.
 
 **Branch flow:** `feat/* → main` (via pull requests).
+
+**Before merging an increment into `main`:** update the backup first so it holds the version that was already checked.
+
+```bash
+git fetch origin
+git push origin origin/main:development
+```
+
+To restore the backup: `git checkout -b fix/restore origin/development`, then open a pull request into `main`.
 
 ### Contributors
 | Name | GitHub |
