@@ -67,7 +67,7 @@
 
 | Tag | Points to |
 |-----|-----------|
-| `before-increment-1` | `main` before Increment 1 (initial commit) |
+| `before-increment-1` | `main` before Increment 1 (initial commit + README) |
 | `feat/increment-1` | Increment 1 software and this documentation | Exists |
 | `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
 | `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
