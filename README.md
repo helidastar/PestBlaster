@@ -70,20 +70,21 @@ To open it on a phone, connect the phone to the same Wi-Fi and go to `http://<yo
 
 | Branch / tag | What it is |
 |--------------|------------|
-| `main` | Stable, checked version of the project |
-| `development` | Backup of `main` taken right before each increment is merged |
-| `feat/<area>` | Work in progress, merged into `main` by pull request |
-| `before-increment-N` | Tag: permanent snapshot of `main` before increment N |
+| `main` | Finished, stable software. Only updated when development is done and the project is in maintenance. |
+| `development` | Working branch. Every feature is merged here and every increment is checked from here. |
+| `feat/<area>` | One feature in progress, merged into `development` by pull request (squash and merge). |
+| `increment-N` | Tag: permanent snapshot of `development` at increment N's checking, so any checked version can be restored. |
+
+**Flow:** `feat/<area>` → `development` → `main`
 
 Commit messages are one line: `type(area): what changed`, for example `feat(ui): add spray history tab`.
 
-Before merging an increment into `main`:
+After an increment is checked, tag it:
 
 ```bash
 git fetch origin
-git push origin origin/main:development                 # update the backup branch
-git tag -a before-increment-2 origin/main -m "main before increment 2"
-git push origin before-increment-2                      # keep a permanent snapshot
+git tag -a increment-1 origin/development -m "increment 1 checked"
+git push origin increment-1
 ```
 
 ## Documentation

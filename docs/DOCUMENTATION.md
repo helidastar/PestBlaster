@@ -1,6 +1,6 @@
 # PestBlaster — Project Documentation
 
-> **Status:** v0.1 — Increment 1 (software) implemented and tested on the development branch. Hardware not yet built.
+> **Status:** v0.1 — Increment 1 (software) implemented and tested on the `development` branch. Hardware not yet built.
 > Anything marked *(planned)* describes the intended design from the *PestBlaster Project Design Proposal* (CpE, Cebu Institute of Technology – University, September 2026) and is not built yet.
 > Diagrams are written in [Mermaid](https://mermaid.js.org/) and render directly on GitHub.
 
@@ -62,34 +62,31 @@
 ### Branches
 | Branch | Purpose | Status |
 |--------|---------|--------|
-| `main` | Stable, reviewed work and project documentation. | Exists |
-| `development` | Backup of `main` taken just before each increment is merged, so the last checked version can always be restored. Not worked on directly. | Exists |
+| `main` | Finished, stable software. Only updated when development is done and the project is in maintenance. | Exists |
+| `development` | Working branch. Every feature is merged here and every increment is checked from here. | Exists |
+| `feat/increment-1` | Increment 1 software and this documentation (merged into `development`) | Merged |
+| `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
+| `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
 
 | Tag | Points to |
 |-----|-----------|
-| `before-increment-1` | `main` before Increment 1 (initial commit + README) |
-| `feat/increment-1` | Increment 1 software and this documentation | Exists |
-| `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
-| `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
+| `increment-1` | `development` as checked at Increment 1 *(create after the check)* |
 
 **Branch naming:** `feat/<area>` for features, `fix/<area>` for fixes.
 
 **Commit messages:** one line, `type(area): what changed`, for example `feat(ui): add spray history tab`. Types: `feat`, `fix`, `docs`, `test`, `chore`, `refactor`.
 
-**Branch flow:** `feat/* → main` (via pull requests).
+**Branch flow:** `feat/<area>` → `development` (pull request, squash and merge) → `main` (only when development is done).
 
-**Before merging an increment into `main`:** update the backup first so it holds the version that was already checked.
+**After each increment check:** tag what was checked so it can always be restored.
 
 ```bash
 git fetch origin
-git push origin origin/main:development
-git tag -a before-increment-N origin/main -m "main before increment N"
-git push origin before-increment-N
+git tag -a increment-N origin/development -m "increment N checked"
+git push origin increment-N
 ```
 
-The `development` branch holds only the latest backup; the `before-increment-N` tags keep every one. To see a past version: `git checkout before-increment-1`.
-
-To restore the backup: `git checkout -b fix/restore origin/development`, then open a pull request into `main`.
+To look at a checked version: `git checkout increment-1`. To restore it: `git checkout -b fix/restore increment-1`, then open a pull request into `development`.
 
 ### Contributors
 | Name | GitHub |
@@ -734,7 +731,7 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 3. The simulator and the firmware use the same API. If you change the API, change both.
 4. Same pest colors and shapes everywhere.
 5. Run `npm test` and `npm run typecheck` before pushing.
-6. Work on a `feat/*` branch → pull request into `main`.
+6. Work on a `feat/<area>` branch → pull request into `development`. Never commit directly to `development` or `main`.
 
 ---
 
