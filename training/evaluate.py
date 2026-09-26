@@ -158,6 +158,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"No photos in {img_dir}. Run prepare_dataset.py first.")
         return 1
 
+    # One untimed request first: the model's first run is slow (loading), not typical.
+    try:
+        post(a.url, photos[0].read_bytes(), "image/png" if photos[0].suffix.lower() == ".png" else "image/jpeg", a.timeout)
+    except (urllib.error.URLError, TimeoutError) as e:
+        print(f"Could not reach the detector at {a.url}: {e}. Is serve.py running?")
+        return 1
+
     results, times = [], []
     for i, photo in enumerate(photos, 1):
         ctype = "image/png" if photo.suffix.lower() == ".png" else "image/jpeg"
@@ -176,7 +183,11 @@ def main(argv: list[str] | None = None) -> int:
     times.sort()
     report.update({
         "url": a.url, "split": a.split, "photos": len(photos), "iou": a.iou,
-        "ms_per_photo": {"mean": round(statistics.mean(times), 1), "p95": round(times[int(0.95 * (len(times) - 1))], 1)},
+        "ms_per_photo": {
+            "mean": round(statistics.mean(times), 1),
+            "median": round(statistics.median(times), 1),
+            "p95": round(times[min(len(times) - 1, int(0.95 * len(times)))], 1),
+        },
         "measured_at": time.strftime("%Y-%m-%d %H:%M"),
     })
 
@@ -192,7 +203,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nSprays on photos with no pest: {row['false_spray_on_no_pest_photos']}")
     if row["center_error_mean"] is not None:
         print(f"Average aim error (box center): {row['center_error_mean'] * 100:.1f}% of the photo width")
-    print(f"Time per photo: {report['ms_per_photo']['mean']} ms average, {report['ms_per_photo']['p95']} ms p95")
+    t = report["ms_per_photo"]
+    print(f"Time per photo: {t['median']} ms median, {t['mean']} ms average, {t['p95']} ms for the slowest 5%")
 
     out = a.out or RUNS_DIR / f"eval-{time.strftime('%Y%m%d-%H%M%S')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
