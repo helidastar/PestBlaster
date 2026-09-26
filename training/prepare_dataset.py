@@ -27,6 +27,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import numpy as np
 import yaml
 from PIL import Image, ImageOps, UnidentifiedImageError
 
@@ -192,6 +193,11 @@ def load_sources(config: dict, raw_dir: Path, report: Report) -> list[Item]:
 # ---------- checking photos ----------
 
 HASH_SIZE = 16
+# Photos whose fingerprints differ in at most this many of 256 bits count as the same photo.
+# Measured: resized or re-saved JPEG copies differ by 0-9 bits; distinct photos of very
+# similar leaves by 10 or more. Missing a copy only leaks a little; merging two different
+# photos would wrongly drop one, so the limit errs on the low side.
+SAME_PHOTO_BITS = 8
 
 
 def dhash(img: Image.Image, size: int = HASH_SIZE) -> str:
@@ -233,9 +239,38 @@ def inspect(items: list[Item], report: Report) -> list[Item]:
         if min(it.width, it.height) < MIN_SIDE:
             report.dropped[f"photo smaller than {MIN_SIDE}px"] += 1
             continue
-        it.key = hashlib.sha1(it.path.read_bytes()).hexdigest()[:16]
+        # Unique per source file (two identical files labeled differently must not overwrite
+        # each other) and stable across rebuilds, so the manifest keeps each photo's split.
+        h = hashlib.sha1(it.path.read_bytes())
+        h.update(f"{it.source}/{it.path.name}".encode())
+        it.key = h.hexdigest()[:16]
         ok.append(it)
     return ok
+
+
+def similar_groups(items: list[Item]) -> list[list[Item]]:
+    """Group photos within SAME_PHOTO_BITS of a group's first (largest) photo.
+
+    Each photo is compared with group leaders only, never chained through other members,
+    so a series of similar-looking shots of one bed cannot collapse into one giant group.
+    """
+    if not items:
+        return []
+    order = sorted(items, key=lambda i: i.width * i.height, reverse=True)
+    bits = np.array([[int(c, 16) for c in it.dhash] for it in order], dtype=np.uint8)
+    bits = np.unpackbits(bits[:, :, None], axis=2)[:, :, 4:].reshape(len(order), -1)
+    leaders: list[int] = []
+    groups: list[list[Item]] = []
+    for i, it in enumerate(order):
+        if leaders:
+            dist = np.count_nonzero(bits[leaders] != bits[i], axis=1)
+            j = int(dist.argmin())
+            if dist[j] <= SAME_PHOTO_BITS:
+                groups[j].append(it)
+                continue
+        leaders.append(i)
+        groups.append([it])
+    return groups
 
 
 def dedupe(items: list[Item], report: Report) -> list[Item]:
@@ -244,11 +279,8 @@ def dedupe(items: list[Item], report: Report) -> list[Item]:
     Photos that look the same but are labeled differently are all kept and reported,
     because they may be two real shots of one leaf (a pest moved) or a labeling mistake.
     """
-    by_hash: dict[str, list[Item]] = defaultdict(list)
-    for it in items:
-        by_hash[it.dhash].append(it)
     kept: list[Item] = []
-    for copies in by_hash.values():
+    for copies in similar_groups(items):
         copies.sort(key=lambda i: i.width * i.height, reverse=True)
         unique: list[Item] = []
         for it in copies:
