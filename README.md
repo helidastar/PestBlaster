@@ -38,7 +38,9 @@ Lettuce in Cebu's school and community gardens is damaged by leaf-feeding pests.
 
 Next.js (App Router) · React · TypeScript · SQLite (built into Node.js 22) · Vitest · ESP32-S3 + OV5640 camera *(hardware, planned)*
 
-Pest detection runs on the server. The ESP32 only moves, takes photos, sprays and reports.
+The ESP32-S3 only moves, takes photos, sprays and reports. The app, database and pest detection model run on the **team laptop** (increment checks and defense) or an **old PC** (field testing) on the same Wi-Fi as the turret. No Raspberry Pi.
+
+**Android app** *(planned, Increment 4)*: the same web app wrapped into an APK with Capacitor, with push notifications through Firebase Cloud Messaging. Until then it runs in the phone's browser.
 
 ## Project Status
 
