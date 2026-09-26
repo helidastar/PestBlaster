@@ -44,7 +44,9 @@
 | **Frontend + API** | Next.js 15 (App Router), React 19, TypeScript |
 | **Database** | SQLite (built into Node.js 22) — file in `data/` |
 | **Pest detection** | Pluggable: simulated stand-in (Increment 1) → trained model served over HTTP *(planned, Increment 2)* |
-| **Turret controller** | ESP32-S3 with OV5640 camera *(planned)*; a software simulator plays its part today |
+| **Turret controller** | ESP32-S3 with OV5640 camera *(planned)*: moves, photographs, sprays and reports. No detection on board. A software simulator plays its part today |
+| **Server** | Team laptop (increment checks, defense) or an old PC (field testing) on the same Wi-Fi as the turret. No Raspberry Pi (cost). See [7.4](#74-deployment) |
+| **Android app** | Mobile web app now; Android APK by wrapping the same app with Capacitor, push notifications through Firebase Cloud Messaging *(planned, Increment 4)*. See [12.4](#124-android-app-planned) |
 | **Architecture style** | Modular monolith server + thin device client |
 | **Key flow** | Turret scans → sends photo → server detects pest → server decides fire or hold and where to aim → turret aims and sprays → app shows it all |
 
@@ -340,12 +342,32 @@ sequenceDiagram
 ```
 
 ### 7.4 Deployment
-| Setup | When | Notes |
-|-------|------|-------|
-| Laptop on the garden Wi-Fi | Increment 1–3 demos and testing | `npm run build && npm start`. Phone and ESP32 connect to `http://<laptop-ip>:3000` |
-| Small always-on machine (Raspberry Pi / mini PC / VPS) | Field testing | Same app; SQLite file persists on disk |
 
-Serverless hosts (e.g. Vercel) are **not** suitable while the database is a local SQLite file, because their disk is not persistent.
+The ESP32-S3 is the **turret controller only**. It has about 512 KB of RAM plus 8 MB of PSRAM and no operating system, so it cannot run the Next.js server, SQLite, or the Python model server. Those run on a computer on the same network as the turret. The team decided not to buy a Raspberry Pi (cost), so the server is a machine we already own.
+
+| Stage | Server | Network | Cost | Why |
+|-------|--------|---------|------|-----|
+| **Increment checks** (1–3) | Team laptop | Phone hotspot or school Wi-Fi | Free | Already owned. Runs the app, database and model server together. Works with no internet. |
+| **Field testing** (days to weeks in the garden) | Old PC left near the garden (a laptop also works) | Garden Wi-Fi, or a pocket Wi-Fi router if there is none | Free (plus pocket Wi-Fi load if needed) | Has to stay on for days; an old PC does this without tying up a team laptop. The small YOLO model runs fine on a normal CPU. |
+| **Final defense** | Team laptop | Its own phone hotspot | Free | Most reliable: nothing depends on the venue's Wi-Fi or internet. |
+| *Optional:* VPS | Rented cloud server (1–2 GB RAM) | Internet | Roughly US$5 a month | Only if growers must open the app from anywhere. The turret would then need internet in the garden, and photo uploads over mobile data add delay. Not needed for the thesis. |
+
+Everything runs on one machine:
+
+```
+ESP32-S3 turret ──Wi-Fi──▶ laptop / old PC
+                            ├─ Next.js app + API + SQLite   port 3000
+                            └─ YOLO model server             port 8000
+Grower's phone ───Wi-Fi──▶ laptop / old PC : 3000
+```
+
+Setup notes:
+- Give the server a **fixed IP** on the router or hotspot (DHCP reservation), so the ESP32 firmware always finds it.
+- On Windows, allow Node.js and Python through the firewall for ports 3000 and 8000.
+- Turn off sleep on the server machine during field tests. If it sleeps, the app shows the turret as offline and the turret holds (never sprays blind).
+- Serverless hosts (e.g. Vercel) are **not** suitable while the database is a local SQLite file, because their disk is not persistent.
+
+**On-device detection (Edge Impulse FOMO on the ESP32-S3)** is not the main design. FOMO works on very small images (about 96×96), returns only the center of each object (no box size), and is noticeably less accurate on small green pests like loopers. It is kept as a **stretch fallback** so the turret can still act when Wi-Fi is down (Appendix C.4). Centers are enough for aiming, because the aim math already uses the box center.
 
 ### 7.5 Key design decisions
 | Decision | Why |
@@ -356,6 +378,8 @@ Serverless hosts (e.g. Vercel) are **not** suitable while the database is a loca
 | Commands delivered on heartbeat | ESP32 only makes outgoing requests; works behind any home router, no open ports |
 | SQLite built into Node 22 | Zero setup, no accounts, one file to back up; enough for one turret |
 | Simulator uses the real device API | Everything tested with the simulator is what the firmware will use |
+| Server on the team laptop / an old PC, no Raspberry Pi | Cost: machines we already own. A laptop CPU runs the small YOLO model faster than a Raspberry Pi would. |
+| Android app by wrapping the web app with Capacitor, not Flutter | One codebase: the four screens are already built and tested. Flutter would mean rewriting them in Dart and keeping two apps in sync. |
 
 ---
 
@@ -540,6 +564,7 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 | Swivel | MG996R metal-gear servo (±170° hanging mount) · MG90S head tilt |
 | Deterrent | R385 12 V diaphragm pump · 12 V normally-closed ¼″ solenoid valve · 2-channel relay or MOSFET module · 6 mm tubing · 0.3–0.5 mm brass misting nozzle · recycled 2–3 L HDPE bottle · neem oil, garlic–chili mix, or Bt |
 | Power | 12 V 7 Ah SLA battery · 10–20 W solar panel + PWM charge controller (or 12 V 3 A adapter) · buck converters for 5 V logic and servos · inline fuse and switch |
+| Server (not on the turret) | Team laptop or an old PC on the same Wi-Fi as the turret (section 7.4). Pocket Wi-Fi router or phone hotspot if the garden has no Wi-Fi. No Raspberry Pi. |
 | Structure | 500 × 500 mm pallet-wood base with brick weights · 0.5 m PVC arm with internal metal rod · sand-filled end cap counterweight · IP65 enclosure with cable glands and silica gel |
 
 ---
@@ -570,6 +595,19 @@ Pages are client components that poll the API (`usePoll`): the Turret and Contro
 
 ### 12.3 Styling
 Plain CSS with design tokens in `globals.css` (no CSS framework). Light and dark themes follow the phone's setting.
+
+### 12.4 Android app *(planned)*
+
+Planned for **Increment 4**, or earlier if the adviser asks for an APK.
+
+- **Capacitor** wraps the existing app into an Android APK. The pages call the API on the server (route handlers and SQLite), so the app cannot be a static export. Instead, Capacitor loads it from the server: `server.url` is set to `http://<server-ip>:3000`, with `cleartext: true` because the local network uses plain HTTP (Android blocks it by default).
+- **Push notifications** use **Firebase Cloud Messaging** (free) through `@capacitor/push-notifications`:
+  1. The app gets an FCM token on start-up and sends it to a new `POST /api/push-tokens` endpoint (new `push_tokens` table).
+  2. When the server creates an alert (`addAlert` in `src/lib/store.ts`: pest found, refill needed), it sends it to every saved token with `firebase-admin`.
+  3. The Firebase service-account key goes in `.env.local`, never in git.
+- FCM needs the **server** to reach the internet (outgoing only). On a phone hotspot the phone's mobile data provides this; the turret and the app keep working without it, only the push is skipped.
+- The web app keeps working in the phone browser, so nothing is lost before the APK exists.
+- Without push, the Capacitor wrapper alone is about a day of work, so an APK can be produced in any increment if required.
 
 ---
 
@@ -684,12 +722,13 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 ## 16. Known Issues, Caveats & Open Questions
 
 ### 16.1 Open questions (to settle with the adviser)
-1. **Controller:** the proposal names the ESP32-S3; the draft BOM also lists Raspberry Pi 4 and ESP32-CAM options. This software assumes **ESP32-S3 + server-side detection**.
+1. **Controller** *(decided)*: the ESP32-S3 is the turret controller. No Raspberry Pi (cost). Detection and the app run on the team laptop or an old PC (section 7.4).
 2. **Pan drive:** stepper motor (proposal) or continuous-rotation servo (draft BOM)? A continuous servo has no position feedback, so the firmware cannot know its true pan angle without an encoder or a home switch.
 3. **Reservoir level:** no level sensor is in the BOM. Options: estimate from pump run time (what the simulator does), a float switch, or an ultrasonic/capacitive level sensor.
 4. **Hose over 360°:** rotary water union, or limit pan to about ±180° with hose slack?
-5. **Where the server runs** during field testing (laptop, Raspberry Pi, or a hosted machine).
+5. **Garden network:** does the garden's Wi-Fi reach the turret and the server? If not, use a pocket Wi-Fi router or a phone hotspot (section 7.4). Also decide whether the old PC or a laptop stays at the garden during field testing.
 6. **Approval sheet increments:** Appendix A is a proposed split for the adviser to confirm.
+7. **APK timing:** does the adviser want an installable Android app before Increment 4 (section 12.4)?
 
 ### 16.2 Risk register
 | Risk | Impact | Mitigation |
@@ -700,11 +739,12 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 | Wrong spray on a leaf with no pest | Wasted deterrent | Confidence threshold + cooldown, both adjustable in the app |
 | Arm sway in wind | Misaimed spray | Re-capture after aiming before spraying *(planned firmware step)* |
 | Swivel wiring fatigue | Camera loses connection | Strain relief, cycle testing (proposal) |
+| Server laptop/PC off or asleep during field tests | No detection; turret holds | Use the old PC, turn off sleep, app shows Offline after 30 s; FOMO fallback as a stretch (C.4) |
 
 ### 16.3 Technical caveats
 - **No login yet.** Anyone on the same network can open the app and control the turret. Fine for demos on a private Wi-Fi; add accounts before any public deployment.
 - The device key is one shared secret, sent in plain HTTP on the local network.
-- Pest alerts appear inside the app only; phone push notifications are *(planned)*.
+- Pest alerts appear inside the app only; phone push notifications through Firebase Cloud Messaging are planned for Increment 4 (section 12.4).
 - Single turret (`turret-1`) in the app. The database and device API already accept other device IDs.
 - Node prints an `ExperimentalWarning` for SQLite on start-up. It is harmless.
 - Aim math assumes the nozzle points where the camera center points; the real offset must be measured and calibrated.
@@ -742,9 +782,9 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 | Milestone | % | Functionalities included |
 |-----------|---|--------------------------|
 | **Increment 1** | 40% | **Software working end to end without hardware.** Backend server and database · device API for the turret · grower app (turret status and map, pest photos and logs, spray history, alerts, trends) · manual override (spray now, move, return home, pause, auto-spray off, spray settings) · fire rule and aiming logic with unit tests · 360° scan path · pluggable detector · turret simulator running the full scan → detect → aim → spray → log loop |
-| **Increment 2** | 60% | Increment 1 plus **real detection and a talking ESP32.** Lettuce pest dataset collected and labeled · model trained and served (`DETECTOR=http`) · accuracy measured per pest · ESP32-S3 firmware: Wi-Fi, heartbeat, camera capture and upload, runs commands (bench test, motors not yet mounted) |
+| **Increment 2** | 60% | Increment 1 plus **real detection and a talking ESP32.** Lettuce pest dataset collected and labeled · model trained in Colab and served from the team laptop (`DETECTOR=http`) · accuracy measured per pest · ESP32-S3 firmware: Wi-Fi, heartbeat, camera capture and upload, runs commands (bench test, motors not yet mounted) |
 | **Increment 3** | 80% | Increment 2 plus **the physical turret.** 360° pan, telescoping lift with limit switches, swivel mount · pump + valve on relay with timed bursts · reservoir level measurement · firmware scan–detect–aim–spray loop on the real turret · aim calibration |
-| **Increment 4** | 100% | Increment 3 plus **field-ready and evaluated.** Weatherproof enclosure and solar power · phone push notifications · night detection with IR (stretch) · field test on a lettuce bed · evaluation against a monitoring-only baseline (Appendix B) · final documentation |
+| **Increment 4** | 100% | Increment 3 plus **field-ready and evaluated.** Weatherproof enclosure and solar power · Android app (Capacitor APK) with push notifications (Firebase Cloud Messaging) · night detection with IR (stretch) · field test on a lettuce bed with the server on an old PC · evaluation against a monitoring-only baseline (Appendix B) · final documentation |
 
 ---
 
@@ -785,6 +825,9 @@ Train a small object detector (for example **YOLOv8n / YOLO11n**) on three class
 | Server inference time per photo | < 1 s on the demo laptop |
 
 The confidence threshold in the app is then set from the validation results (the point where false sprays are acceptably low).
+
+### C.4 On-device fallback *(stretch)*
+If time allows, a small **Edge Impulse FOMO** model (about 96×96 input) can run on the ESP32-S3 itself. It returns only object centers and is less accurate, especially on loopers, so it is used **only when the server cannot be reached**, never in place of it. Its accuracy is reported separately from the server model.
 
 ---
 
