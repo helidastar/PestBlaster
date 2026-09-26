@@ -1,0 +1,31 @@
+{
+  "name": "pestblaster",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PestBlaster: backend, grower app and turret simulator for the autonomous lettuce pest deterrence turret",
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "simulate": "tsx scripts/simulate.ts",
+    "reset-data": "tsx scripts/reset-data.ts"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "next": "^15.5.26",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.2"
+  }
+}
