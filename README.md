@@ -12,11 +12,7 @@ A garden turret that finds diamondback moth larvae, loopers and aphids on lettuc
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 ![ESP32](https://img.shields.io/badge/ESP32--S3-E7352C?logo=espressif&logoColor=white)
 
-<<<<<<< HEAD
 **[Read the Full Documentation](docs/DOCUMENTATION.md)**
-=======
-**[Read the Full Documentation](docs/DOCUMENTATION.md)**
->>>>>>> origin/main
 
 </div>
 
@@ -48,11 +44,7 @@ Pest detection runs on the server. The ESP32 only moves, takes photos, sprays an
 
 **Increment 1 (software) is built and tested.** The backend, device API, grower app, fire rule, aiming logic and scan path work end to end. A turret simulator stands in for the ESP32, so the whole loop runs without hardware. 32 unit tests pass.
 
-<<<<<<< HEAD
 Next: train the pest detection model and bring up the ESP32 firmware (Increment 2), then build the physical turret (Increment 3). See the [increment plan](docs/DOCUMENTATION.md#appendix-a--increment-plan).
-=======
-Next: train the pest detection model and bring up the ESP32 firmware (Increment 2), then build the physical turret (Increment 3). See the [increment plan](docs/DOCUMENTATION.md#appendix-a--increment-plan).
->>>>>>> origin/main
 
 ## Getting Started
 
@@ -96,11 +88,7 @@ git push origin before-increment-2                      # keep a permanent snaps
 
 ## Documentation
 
-<<<<<<< HEAD
 > **The complete project documentation is in [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).**
-=======
-> **The complete project documentation is in [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).**
->>>>>>> origin/main
 >
 > It covers the system flow, architecture, data model, device and app APIs, hardware summary, setup, the increment plan, testing strategies and the pest detection model plan.
 
