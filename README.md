@@ -12,7 +12,7 @@ A garden turret that finds diamondback moth larvae, loopers and aphids on lettuc
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 ![ESP32](https://img.shields.io/badge/ESP32--S3-E7352C?logo=espressif&logoColor=white)
 
-**[Read the Full Documentation](https://github.com/helidastar/PestBlaster/blob/feat/increment-1/docs/DOCUMENTATION.md)**
+**[Read the Full Documentation](docs/DOCUMENTATION.md)**
 
 </div>
 
@@ -44,7 +44,7 @@ Pest detection runs on the server. The ESP32 only moves, takes photos, sprays an
 
 **Increment 1 (software) is built and tested.** The backend, device API, grower app, fire rule, aiming logic and scan path work end to end. A turret simulator stands in for the ESP32, so the whole loop runs without hardware. 32 unit tests pass.
 
-Next: train the pest detection model and bring up the ESP32 firmware (Increment 2), then build the physical turret (Increment 3). See the [increment plan](https://github.com/helidastar/PestBlaster/blob/feat/increment-1/docs/DOCUMENTATION.md#appendix-a--increment-plan).
+Next: train the pest detection model and bring up the ESP32 firmware (Increment 2), then build the physical turret (Increment 3). See the [increment plan](docs/DOCUMENTATION.md#appendix-a--increment-plan).
 
 ## Getting Started
 
@@ -70,25 +70,26 @@ To open it on a phone, connect the phone to the same Wi-Fi and go to `http://<yo
 
 | Branch / tag | What it is |
 |--------------|------------|
-| `main` | Stable, checked version of the project |
-| `development` | Backup of `main` taken right before each increment is merged |
-| `feat/<area>` | Work in progress, merged into `main` by pull request |
-| `before-increment-N` | Tag: permanent snapshot of `main` before increment N |
+| `main` | Finished, stable software. Only updated when development is done and the project is in maintenance. |
+| `development` | Working branch. Every feature is merged here and every increment is checked from here. |
+| `feat/<area>` | One feature in progress, merged into `development` by pull request (squash and merge). |
+| `increment-N` | Tag: permanent snapshot of `development` at increment N's checking, so any checked version can be restored. |
+
+**Flow:** `feat/<area>` → `development` → `main`
 
 Commit messages are one line: `type(area): what changed`, for example `feat(ui): add spray history tab`.
 
-Before merging an increment into `main`:
+After an increment is checked, tag it:
 
 ```bash
 git fetch origin
-git push origin origin/main:development                 # update the backup branch
-git tag -a before-increment-2 origin/main -m "main before increment 2"
-git push origin before-increment-2                      # keep a permanent snapshot
+git tag -a increment-1 origin/development -m "increment 1 checked"
+git push origin increment-1
 ```
 
 ## Documentation
 
-> **The complete project documentation is in [docs/DOCUMENTATION.md](https://github.com/helidastar/PestBlaster/blob/feat/increment-1/docs/DOCUMENTATION.md).**
+> **The complete project documentation is in [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md).**
 >
 > It covers the system flow, architecture, data model, device and app APIs, hardware summary, setup, the increment plan, testing strategies and the pest detection model plan.
 
