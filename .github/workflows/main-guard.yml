@@ -1,0 +1,61 @@
+name: main guard
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Make this a required status check in the main branch rule.
+  checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Commit messages follow type(area) format
+        run: |
+          bad=$(git log --format='%s' --no-merges \
+              "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" \
+            | grep -Ev '^(feat|fix|docs|chore|refactor|test|style|perf|build|ci)(\([a-z0-9-]+\))?: .+' || true)
+          if [ -n "$bad" ]; then
+            echo "These commit messages do not match 'type(area): what changed':"
+            echo "$bad"
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        if: hashFiles('package.json') != ''
+        with:
+          node-version: 22
+
+      - name: Install and test
+        if: hashFiles('package.json') != ''
+        run: |
+          npm ci || npm install
+          npm test
+
+  # Flags anything that lands on main without going through a pull request.
+  direct-push:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+            });
+            if (!prs.some(pr => pr.merged_at)) {
+              core.setFailed(`Commit ${context.sha.slice(0, 7)} was pushed to main directly, not through a pull request.`);
+            }
