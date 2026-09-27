@@ -77,6 +77,8 @@ To open it on a phone, connect the phone to the same Wi-Fi and go to `http://<yo
 
 Commit messages are one line: `type(area): what changed`, for example `feat(ui): add spray history tab`.
 
+`main` is protected: changes go in only by pull request, need an approving review from a code owner, and must pass the `main guard` check (commit message format and `npm test`). Force-pushes and deleting `main` are blocked.
+
 Before merging an increment into `main`:
 
 ```bash
