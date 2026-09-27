@@ -98,7 +98,7 @@ git push origin before-increment-2                      # keep a permanent snaps
 
 | Name | GitHub |
 |------|--------|
-| Adriyanna G. Diana | — |
+| Adriyanna G. Diana | [@adiii568](https://github.com/adiii568) |
 | Maria Mhikyla L. Jayno | [@mhiksNmatch](https://github.com/mhiksNmatch) |
 | Charity T. Ricabo | [@helidastar](https://github.com/helidastar) |
 
