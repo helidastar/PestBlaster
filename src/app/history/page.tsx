@@ -23,8 +23,10 @@ export default function HistoryPage() {
 
   return (
     <>
-      <h1 className="page-title">History</h1>
-      <p className="page-lede">How often pests show up, every spray the turret made, and the alerts it sent you.</p>
+      <header className="page-head">
+        <h1 className="page-title">History</h1>
+        <p className="page-lede">How often pests show up, every spray the turret made, and the alerts it sent you.</p>
+      </header>
 
       <div className="tabs" role="tablist">
         {(["trends", "sprays", "alerts"] as Tab[]).map((t) => (

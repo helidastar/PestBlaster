@@ -29,8 +29,13 @@ export const ClockIcon = () => (
     <path d="M12 7v5l3 2" />
   </svg>
 );
-export const DropIcon = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" {...base}>
+export const DropIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" className={className} {...base}>
     <path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z" />
+  </svg>
+);
+export const ArrowIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...base}>
+    <path d="M5 12h13M13 6l6 6-6 6" />
   </svg>
 );

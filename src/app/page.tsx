@@ -6,6 +6,7 @@ import { HOLD_REASON_TEXT } from "@/lib/decision";
 import { PESTS } from "@/lib/pests";
 import { send, timeAgo, usePoll } from "@/lib/client";
 import type { StatusResponse } from "@/lib/view-types";
+import { ArrowIcon } from "@/components/Icons";
 import { PestLabel } from "@/components/PestMark";
 import { Radar } from "@/components/Radar";
 import { Reservoir } from "@/components/Reservoir";
@@ -16,7 +17,14 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
 
   if (!data) {
-    return error ? <div className="banner">{error}</div> : <p className="muted">Connecting to the turret…</p>;
+    return error ? (
+      <div className="banner">{error}</div>
+    ) : (
+      <div className="dash" aria-busy="true" aria-label="Connecting to the turret">
+        <div className="skeleton" style={{ height: 64 }} />
+        <div className="skeleton" style={{ aspectRatio: "1 / 1.15" }} />
+      </div>
+    );
   }
 
   const { device, online, today, latestCapture } = data;
@@ -33,101 +41,116 @@ export default function Home() {
   }
 
   const top = latestCapture?.detections[0];
+  const status = !online
+    ? `Not heard from since ${timeAgo(device.lastSeen)}. It will pick up commands when it reconnects.`
+    : device.mode === "paused"
+      ? "Paused. Watching the bed but not moving on its own."
+      : latestCapture
+        ? `Sweeping the bed. Last pest photo ${timeAgo(latestCapture.createdAt)}.`
+        : "Sweeping the bed. Nothing found yet.";
+  const flowMax = Math.max(1, today.scans);
 
   return (
-    <>
-      {error && <div className="banner">Lost connection to the server: {error}</div>}
+    <div className="dash">
+      {error && <div className="banner" style={{ gridColumn: "1 / -1" }}>Lost connection to the server: {error}</div>}
 
-      <div className="card-head" style={{ marginBottom: 6 }}>
-        <h1 className="page-title">{device.name}</h1>
-      </div>
-      <div className="btn-row" style={{ marginBottom: 16, gap: 8 }}>
-        <span className={`pill ${online ? "on" : "off"}`}>
-          <span className="dot" /> {online ? "Online" : `Offline · last seen ${timeAgo(device.lastSeen)}`}
-        </span>
-        <span className={`pill ${autoOn ? "spray" : ""}`}>{autoOn ? "Auto-spray on" : "Auto-spray off"}</span>
+      <div className="dash-greet">
+        <div>
+          <h1 className="page-title">{device.name}</h1>
+          <p>{status}</p>
+        </div>
         {data.detector === "simulated" && <span className="pill">Simulated detector</span>}
       </div>
 
-      <section className="card radar-card" aria-labelledby="radar-title">
+      <section className="scope" aria-labelledby="radar-title">
         <div className="card-head">
           <h2 className="card-title" id="radar-title">Where it&apos;s looking</h2>
-          <span className="card-note">Last 12 sightings</span>
+          <span className={`scope-live${online ? "" : " idle"}`}>
+            <i /> {online ? "LIVE" : "LAST KNOWN"}
+          </span>
         </div>
         <Radar pose={device.pose} pests={data.recentPests} lastFire={data.lastFire} />
       </section>
 
-      <section className="card">
-        <div className="switch-row">
-          <div>
-            <strong>Auto-spray</strong>
-            <span className="muted" style={{ fontSize: 14 }}>
+      <div className="dash-side">
+        <div className="dash-pair">
+          <Reservoir pct={device.reservoirPct} lowPct={device.settings.reservoirLowPct} />
+          <section className={`card leaf mini${autoOn ? " is-on" : ""}`}>
+            <h2 id="auto-title">Auto-spray</h2>
+            <p>
               {autoOn
-                ? `Sprays when it is at least ${Math.round(device.settings.confidenceThreshold * 100)}% sure it sees a pest.`
-                : "The turret keeps watching and logging, but will not spray on its own."}
-            </span>
+                ? `On when ≥ ${Math.round(device.settings.confidenceThreshold * 100)}% sure`
+                : "Off. Watching and logging only."}
+            </p>
+            <button
+              className="switch"
+              role="switch"
+              aria-checked={autoOn}
+              aria-labelledby="auto-title"
+              disabled={saving}
+              onClick={toggleAuto}
+            />
+          </section>
+        </div>
+
+        <section className="card">
+          <div className="card-head">
+            <h2 className="card-title">Today</h2>
+            <Link href="/history" className="card-note">Trends</Link>
           </div>
-          <button
-            className="switch"
-            role="switch"
-            aria-checked={autoOn}
-            aria-label="Auto-spray"
-            disabled={saving}
-            onClick={toggleAuto}
-          />
-        </div>
-      </section>
+          <div className="flow">
+            <div className="step">
+              <span className="num">{today.scans}</span>
+              <span className="lbl">spots checked</span>
+            </div>
+            <span className="arrow"><ArrowIcon /></span>
+            <div className="step found">
+              <span className="num">{today.pests}</span>
+              <span className="lbl">pests found</span>
+            </div>
+            <span className="arrow"><ArrowIcon /></span>
+            <div className="step sprayed">
+              <span className="num">{today.sprays}</span>
+              <span className="lbl">sprayed</span>
+            </div>
+          </div>
+          <div className="flow-bar" aria-hidden="true">
+            <span style={{ width: `${(today.sprays / flowMax) * 100}%`, background: "var(--spray)" }} />
+            <span style={{ width: `${(Math.max(0, today.pests - today.sprays) / flowMax) * 100}%`, background: "var(--pest-aphid)" }} />
+            <span style={{ flex: 1 }} />
+          </div>
+        </section>
 
-      <section className="card">
-        <Reservoir pct={device.reservoirPct} lowPct={device.settings.reservoirLowPct} />
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">Today</h2>
-          <Link href="/history" className="card-note">Trends</Link>
-        </div>
-        <div className="today">
-          <span><b>{today.scans}</b> spots checked</span>
-          <span><b>{today.pests}</b> pests seen</span>
-          <span><b>{today.sprays}</b> sprays</span>
-        </div>
-      </section>
-
-      <section className="card">
-        <div className="card-head">
-          <h2 className="card-title">Latest pest</h2>
-          <Link href="/pests" className="card-note">All pests</Link>
-        </div>
-        {latestCapture && top ? (
-          <>
-            <Snapshot capture={latestCapture} />
-            <div className="capture">
-              <div className="meta">
+        <section className="card leaf">
+          <div className="card-head">
+            <h2 className="card-title">Latest pest</h2>
+            <Link href="/pests" className="card-note">All pests</Link>
+          </div>
+          {latestCapture && top ? (
+            <div className="latest">
+              <Snapshot capture={latestCapture} />
+              <div>
+                <h3><PestLabel pest={top.pest} /></h3>
+                <p className="sci">{PESTS[top.pest].scientific}</p>
+                <p className="note">{PESTS[top.pest].note}</p>
                 <div className="row">
-                  <PestLabel pest={top.pest} />
-                  <span className="muted">{timeAgo(latestCapture.createdAt)}</span>
-                </div>
-                <div className="row">
-                  <span className="muted">{PESTS[top.pest].scientific}</span>
-                  <span>
-                    {latestCapture.decision === "fire" ? (
-                      <span className="pill spray">Sprayed</span>
-                    ) : (
-                      <span className="pill">{HOLD_REASON_TEXT[latestCapture.holdReason ?? ""] ?? "Not sprayed"}</span>
-                    )}
-                  </span>
+                  {latestCapture.decision === "fire" ? (
+                    <span className="pill spray">Sprayed</span>
+                  ) : (
+                    <span className="pill">{HOLD_REASON_TEXT[latestCapture.holdReason ?? ""] ?? "Not sprayed"}</span>
+                  )}
+                  <span className="muted" style={{ fontSize: 14 }}>{timeAgo(latestCapture.createdAt)}</span>
                 </div>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="empty">
-            <strong>No pests seen yet</strong>
-            When the turret spots a larva, looper or aphids, the photo shows up here.
-          </div>
-        )}
-      </section>
-    </>
+          ) : (
+            <div className="empty">
+              <strong>No pests seen yet</strong>
+              When the turret spots a larva, looper or aphids, the photo shows up here.
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }
