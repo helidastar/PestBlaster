@@ -55,24 +55,26 @@ export function TrendChart({ days }: { days: DayStat[] }) {
               onClick={() => setHover(i)}
             >
               <rect className="hover-bg" x={PAD.l + i * slot} y={PAD.t} width={slot} height={plotH} fill={hover === i ? "var(--surface-2)" : "transparent"} />
-              {segs.map((p, j) => {
-                const v = day.counts[p];
-                const y0 = y(acc);
-                acc += v;
-                const y1 = y(acc);
-                const isTop = j === segs.length - 1;
-                const h = Math.max(1, y0 - y1);
-                return isTop ? (
-                  <path
-                    key={p}
-                    className="seg"
-                    style={{ fill: PESTS[p].color }}
-                    d={`M ${x} ${y0} V ${y1 + Math.min(4, h)} Q ${x} ${y1} ${x + Math.min(4, h)} ${y1} H ${x + barW - Math.min(4, h)} Q ${x + barW} ${y1} ${x + barW} ${y1 + Math.min(4, h)} V ${y0} Z`}
-                  />
-                ) : (
-                  <rect key={p} className="seg" style={{ fill: PESTS[p].color }} x={x} y={y1} width={barW} height={h} />
-                );
+              <g className="bar" style={{ animationDelay: `${i * 60}ms` }}>
+                {segs.map((p, j) => {
+                  const v = day.counts[p];
+                  const y0 = y(acc);
+                  acc += v;
+                  const y1 = y(acc);
+                  const isTop = j === segs.length - 1;
+                  const h = Math.max(1, y0 - y1);
+                  return isTop ? (
+                    <path
+                      key={p}
+                      className="seg"
+                      style={{ fill: PESTS[p].color }}
+                      d={`M ${x} ${y0} V ${y1 + Math.min(4, h)} Q ${x} ${y1} ${x + Math.min(4, h)} ${y1} H ${x + barW - Math.min(4, h)} Q ${x + barW} ${y1} ${x + barW} ${y1 + Math.min(4, h)} V ${y0} Z`}
+                    />
+                  ) : (
+                    <rect key={p} className="seg" style={{ fill: PESTS[p].color }} x={x} y={y1} width={barW} height={h} />
+                  );
               })}
+              </g>
               {totals[i] > 0 && (
                 <text className="total" x={x + barW / 2} y={y(totals[i]) - 4} textAnchor="middle">{totals[i]}</text>
               )}

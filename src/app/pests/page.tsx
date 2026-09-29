@@ -15,8 +15,10 @@ export default function PestsPage() {
 
   return (
     <>
-      <h1 className="page-title">Pests seen</h1>
-      <p className="page-lede">Every photo where the turret found a pest, newest first, and what it did about it.</p>
+      <header className="page-head">
+        <h1 className="page-title">Pests seen</h1>
+        <p className="page-lede">Every photo where the turret found a pest, newest first, and what it did about it.</p>
+      </header>
 
       <div className="chips" role="group" aria-label="Filter by pest">
         <button className="chip" aria-pressed={filter === null} onClick={() => setFilter(null)}>All</button>
@@ -37,7 +39,7 @@ export default function PestsPage() {
 
       <div className="capture-list">
         {data?.map((c) => (
-          <article key={c.id} className="card capture" style={{ marginBottom: 0 }}>
+          <article key={c.id} className="card leaf capture" style={{ marginBottom: 0 }}>
             <Snapshot capture={c} />
             <div className="meta">
               {c.detections.map((d) => (

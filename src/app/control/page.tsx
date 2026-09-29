@@ -56,16 +56,18 @@ export default function ControlPage() {
 
   return (
     <>
-      <h1 className="page-title">Control</h1>
-      <p className="page-lede">Take over the turret by hand, or pause it while you harvest or refill.</p>
+      <header className="page-head">
+        <h1 className="page-title">Control</h1>
+        <p className="page-lede">Take over the turret by hand, or pause it while you harvest or refill.</p>
+      </header>
       {!online && (
         <div className="banner">
           The turret is offline (last seen {timeAgo(device.lastSeen)}). Commands will wait until it reconnects.
         </div>
       )}
 
-      <section className="card">
-        <div className="switch-row" style={{ marginBottom: 14 }}>
+      <section className="card leaf spray-card">
+        <div className="switch-row">
           <div>
             <strong>{paused ? "Turret paused" : "Turret running"}</strong>
             <span className="muted" style={{ fontSize: 14 }}>
@@ -217,6 +219,7 @@ function Slider(props: {
         step={props.step ?? 1}
         value={props.value}
         onChange={(e) => props.onChange(Number(e.target.value))}
+        style={{ ["--p" as string]: `${((props.value - props.min) / (props.max - props.min)) * 100}%` }}
       />
       {props.hint && <span className="hint">{props.hint}</span>}
     </div>
