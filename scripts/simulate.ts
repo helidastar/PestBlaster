@@ -7,9 +7,12 @@
  *   npm run simulate                       # runs until Ctrl+C
  *   npm run simulate -- --once             # one full 360° sweep, then exit
  *   npm run simulate -- --step 800 --pest-rate 0.4 --reservoir 35
+ *   npm run simulate -- --photos training/dataset/images/test   # real photos, for DETECTOR=http
  *
  * The HTTP calls here are the same ones the firmware will make (see docs, section 10.1).
  */
+import fs from "node:fs";
+import path from "node:path";
 import { scanWaypoints } from "../src/lib/scan";
 import { PEST_TYPES, type PestType } from "../src/lib/pests";
 import type { Command, Decision, Detection, DeviceSettings, Pose } from "../src/lib/types";
@@ -25,6 +28,20 @@ const BASE = opt("url", process.env.PESTBLASTER_URL ?? "http://localhost:3000");
 const KEY = process.env.DEVICE_API_KEY || "pestblaster-dev";
 const STEP_MS = Number(opt("step", "1500"));
 const PEST_RATE = Number(opt("pest-rate", "0.3"));
+/** Folder of real JPEG/PNG photos to send instead of drawn leaves (use with DETECTOR=http). */
+const PHOTOS_DIR = opt("photos", "");
+const PHOTOS = PHOTOS_DIR ? listPhotos(PHOTOS_DIR) : [];
+
+function listPhotos(dir: string): string[] {
+  const files = fs.existsSync(dir)
+    ? fs.readdirSync(dir).filter((f) => /\.(jpe?g|png)$/i.test(f)).map((f) => path.join(dir, f))
+    : [];
+  if (files.length === 0) {
+    console.error(`No JPEG or PNG photos found in ${dir}`);
+    process.exit(1);
+  }
+  return files;
+}
 /** Deterrent used per second of spraying, in percent of a full 2.5 L reservoir (R385 pump ≈ 2 L/min). */
 const PCT_PER_SPRAY_SECOND = 1.3;
 const HOME: Pose = { pan: 0, lift: 300, swivel: 60 };
@@ -151,11 +168,19 @@ async function runCommand(cmd: Command) {
 }
 
 async function capture(): Promise<void> {
-  const truth = randomPests(pose);
   const form = new FormData();
-  form.set("image", new Blob([renderLeaf(pose, truth)], { type: "image/svg+xml" }), "snap.svg");
+  let truth: Detection[] = [];
+  if (PHOTOS.length > 0) {
+    // A real photo: the detector has to find the pests itself, so no ground truth is sent.
+    const file = PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+    const type = /\.png$/i.test(file) ? "image/png" : "image/jpeg";
+    form.set("image", new Blob([fs.readFileSync(file)], { type }), path.basename(file));
+  } else {
+    truth = randomPests(pose);
+    form.set("image", new Blob([renderLeaf(pose, truth)], { type: "image/svg+xml" }), "snap.svg");
+    form.set("simTruth", JSON.stringify(truth));
+  }
   form.set("pose", JSON.stringify(pose));
-  form.set("simTruth", JSON.stringify(truth));
   const res = await api<{ captureId: number; detections: Detection[]; decision: Decision }>(
     "/api/device/captures",
     { method: "POST", body: form },
@@ -179,7 +204,10 @@ async function capture(): Promise<void> {
 }
 
 async function main() {
-  log(`PestBlaster simulator → ${BASE}  (step ${STEP_MS} ms, pest rate ${PEST_RATE})`);
+  log(
+    `PestBlaster simulator → ${BASE}  (step ${STEP_MS} ms, ` +
+      (PHOTOS.length ? `${PHOTOS.length} real photos from ${PHOTOS_DIR})` : `pest rate ${PEST_RATE})`),
+  );
   const path = scanWaypoints();
   let sweep = 0;
   for (;;) {

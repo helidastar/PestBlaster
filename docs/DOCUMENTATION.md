@@ -769,7 +769,9 @@ B.2 and B.6 can already be run in software with the simulator in Increment 1.
 *(planned — Increment 2)*
 
 ### C.1 Approach
-Train a small object detector (for example **YOLOv8n / YOLO11n**) on three classes: `diamondback_larva`, `looper`, `aphid_cluster`. Run it on the server behind a tiny HTTP service that follows the contract in section 13.2 (for example Python + FastAPI + Ultralytics). The Next.js server then only needs `DETECTOR=http`.
+The step-by-step guide, scripts and Colab notebook are in [`training/`](../training/README.md); results of each run are logged in [`docs/training-runs/`](training-runs/README.md).
+
+Train a small object detector, **YOLO11n**, on three classes: `diamondback_larva`, `looper`, `aphid_cluster`, in Google Colab (free T4 GPU). Serve it from the team laptop with `training/serve.py` (FastAPI + Ultralytics), which follows the contract in section 13.2. The Next.js app then only needs `DETECTOR=http`.
 
 ### C.2 Dataset
 - Public pest image datasets (e.g. IP102, Roboflow Universe pest sets) for the three pests, filtered to leafy vegetables where possible.
