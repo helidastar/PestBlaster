@@ -66,7 +66,7 @@ PestBlaster is an autonomous rotating turret that stands on the ground between t
         leaf tops and undersides through the hanging swivel mount
         |
         v
-  ESP32-S3 CAM ──USB──▶ Raspberry Pi 5:  OpenCV preprocessing ──▶ YOLO11n
+  ESP32-S3 CAM ──Wi-Fi (Pi hotspot)──▶ Raspberry Pi 5:  OpenCV preprocessing ──▶ YOLO11n
         |                                 pest type · confidence · box
         v
   Pi decides:  confidence ≥ threshold (60%) · not paused · auto-spray on
@@ -81,7 +81,7 @@ PestBlaster is an autonomous rotating turret that stands on the ground between t
         |
         v
   log capture, detection, spray to SQLite  ──▶  app: photos, alerts, history
-  (ESP32 never sprays on its own · Pi or USB link fails = stop and wait · E-stop cuts all motors)
+  (ESP32 never sprays on its own · no Pi reply in 5 s = no spray, stop and wait · E-stop cuts all motors)
 ```
 
 | Users can… | How |
@@ -108,8 +108,8 @@ PestBlaster is an autonomous rotating turret that stands on the ground between t
 
 **What we want you to notice:**
 
-- **The turret never decides to spray.** The ESP32-S3 moves and takes photos; only the Raspberry Pi 5 decides. If the Pi or the USB link fails, the turret stops all motion and waits.
-- **Works without internet.** Detection, the database and the app all run on the Pi 5.
+- **The turret never decides to spray.** The ESP32-S3 moves and takes photos; only the Raspberry Pi 5 decides. If the Pi does not reply within 5 s, nothing sprays: the turret stops, keeps trying to reconnect, and carries on when the link is back.
+- **Works without internet.** Detection, the database and the app all run on the Pi 5. The ESP32 and the phone join the Pi's own `PestBlaster` Wi-Fi hotspot.
 - **Every hold has a reason.** When it does not spray, the app says why (not sure enough, paused, auto-spray off, reservoir empty, waiting between sprays).
 - **Every number has a formula.** Detection distance, spray timing and battery life are worked out on the blueprint sheets, or marked as an estimate with the test that will measure it.
 
@@ -144,7 +144,7 @@ PestBlaster is an autonomous rotating turret that stands on the ground between t
 | Turret controller | ESP32-S3 CAM (ESP32-S3-WROOM-1 N16R8), Arduino | Captures photos; controls the stepper, actuator, servos, pump and valve; runs no AI |
 | Camera | OV5640 5 MP (IR-cut removed), 850 nm IR LED ring (stretch) | Photos of lettuce leaves; low-resolution live view on request |
 | AI computer | Raspberry Pi 5 (4 GB) inside the weatherproof enclosure on the turntable | OpenCV preprocessing, YOLO11n, aim calculation, spray decision, server, database, app |
-| ESP32 ↔ Pi link | USB cable along the post and arm | Photos up, commands back |
+| ESP32 ↔ Pi link | Wi-Fi through the Pi's own hotspot (no internet, no router) | Photos up, commands back. The ESP32's USB port is kept for flashing and debugging |
 | Pest detection | YOLO11n trained in Google Colab, served by FastAPI + Ultralytics | Pest type, confidence and box in each photo |
 | App + API | Next.js (App Router), React, TypeScript | Garden Management Mobile App: a web app you add to the phone's home screen (Android APK planned) |
 | Database | SQLite | Every capture, detection, spray, command and alert |
@@ -188,7 +188,7 @@ PestBlaster/
 └── docs/                # DOCUMENTATION.md and other project docs.               (All)
 ```
 
-The ESP32 and the Pi are separate programs joined by a USB cable, so each has its own folder. The app and its API are one Next.js program that runs on the Pi.
+The ESP32 and the Pi are separate programs that talk over the Pi's Wi-Fi hotspot, so each has its own folder. The app and its API are one Next.js program that runs on the Pi.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -213,7 +213,7 @@ The order follows blueprint v15 and the Thesis 1 schedule. Each step needs the o
 
 9. Spray line (pump, valve, hoses), arm and head. (Hardware, Firmware)
 10. Trained pest model in `model/`. (Software)
-11. Raspberry Pi 5 set up in `pi/`: detection server, ESP32 talking to it over USB. (Software, Firmware)
+11. Raspberry Pi 5 set up in `pi/`: detection server, ESP32 talking to it over the Pi's Wi-Fi hotspot. (Software, Firmware)
 12. Prototype app. (Software)
 
 **After the 50% build:** kickstarter video (Nov 16-20), panel defense (Nov 23-27).
@@ -314,7 +314,7 @@ Hardware tests (detection distance, aim, spray, battery, weather) follow the tes
 - [ ] First firmware: 360° turns, homing, lift up and down (25% check, Oct 30)
 - [ ] Spray line, arm and head (50% build, Nov 3-13)
 - [ ] Pest dataset collected and YOLO11n trained (50% build)
-- [ ] Raspberry Pi 5 set up: detection server and USB link to the ESP32 (50% build)
+- [ ] Raspberry Pi 5 set up: hotspot, detection server and Wi-Fi link to the ESP32 (50% build)
 - [ ] App updated to the approved design: new pest list, swivel ±90° and tilt, battery level and alert, live view (50% build)
 - [ ] Every line of the test sheet (sheet 19) filled in with measured values and % error
 - [ ] Field test next to an unprotected control bed

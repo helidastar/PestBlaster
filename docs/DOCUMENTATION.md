@@ -46,7 +46,7 @@
 | **Database** | SQLite (built into Node.js 22) — file in `data/` |
 | **Pest detection** | YOLO11n with OpenCV preprocessing on the Raspberry Pi 5, served by FastAPI + Ultralytics *(planned, Increment 2)*; a simulated detector stands in today |
 | **Turret controller** | ESP32-S3 CAM (N16R8) with OV5640 camera *(planned)*; a software simulator plays its part today |
-| **ESP32 ↔ Pi link** | USB cable (approval documents); blueprint v15 uses Wi-Fi via a Pi hotspot (open item, section 16.4) |
+| **ESP32 ↔ Pi link** | Wi-Fi through the Pi 5's own hotspot (blueprint v15, sheet 34); no internet or router needed. Decided 16 Oct 2026; the approval documents still say USB until they are edited (section 16.4) |
 | **Architecture style** | Modular monolith on the Pi (Next.js app + API, SQLite, model server) + thin device client (ESP32) |
 | **Key flow** | Turret scans → sends photo to the Pi → Pi detects pest → Pi decides fire or hold and where to aim → turret aims and sprays → app shows it all |
 
@@ -301,6 +301,19 @@ The detector returns a box in image coordinates (0–1). The server converts the
 ### 6.7 Online / offline
 The turret checks in every few seconds. If the server has not heard from it for **30 seconds**, the app shows it as offline. Commands sent while offline wait until it reconnects.
 
+### 6.8 If the Wi-Fi link drops
+The ESP32 and the Pi talk over the Pi's own hotspot, about 1 m apart on the same turntable. There is no second (wired) link: a dropout fails safe instead.
+
+| Step | What happens | Source |
+|------|--------------|--------|
+| 1 | No reply from the Pi within 5 s → no spray: pump off, valve stays closed | Blueprint v15, sheet 34 |
+| 2 | The turret stops moving and keeps retrying the hotspot every few seconds | Proposed firmware rule |
+| 3 | After about 1 minute without the Pi, it returns home and waits | Proposed firmware rule |
+| 4 | When the link is back, it continues the patrol from the next stop | Proposed firmware rule |
+| 5 | The app shows the turret as offline after 30 s without a check-in | Increment 1 code (section 6.7) |
+
+Worst case is a missed spray, never a wrong one. Why not a USB backup: a wired link would have to run through the lift and the swivel, the joints with the highest cable-fatigue risk (section 3.6), to back up a failure that is already safe. The ESP32's USB port is kept for flashing and debugging. A USB backup link stays on the stretch list.
+
 ---
 
 ## 7. System Architecture
@@ -336,7 +349,7 @@ flowchart TB
 
     APP([Grower app on phone])
 
-    T -- USB --> DAPI
+    T -- Wi-Fi (Pi hotspot) --> DAPI
     SIM -. same API .-> DAPI
     DAPI --> DET --> DEC --> STORE
     DET -. DETECTOR=http .-> MODEL
@@ -565,7 +578,7 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 | Vertical lift | 12 V linear actuator, 300 mm stroke, built-in end limit switches + DRV8871 · telescoping PVC post (1¼″ sleeve, 1″ inner pipe, 30 cm travel) · actuator clamps and rod bracket |
 | Crossbar and head | PVC T-crossbar: 0.5 m arm + 0.25 m counter-arm, internal steel rod · counterweight end cap · ESP32-S3 CAM (ESP32-S3-WROOM-1 N16R8) · PCA9685 servo driver · PCF8574 I/O expander · OV5640 5 MP (IR-cut removed) · 850 nm IR LED ring (stretch) · hanging swivel mount ±90° · 2 × MG996R (swivel, tilt) · sealed head housing with clear window |
 | Deterrent | Recycled 2–3 L bottle upside down on a stand, UV-shielded · vented refill lid · inline strainer · R385 12 V diaphragm pump + 2-channel relay · coiled 6 mm PU hose · 12 V NC solenoid valve under the arm tip · silicone service loop 150–200 mm · brass misting nozzle |
-| Enclosure | IP65 enclosure with cable glands and silica gel on the turntable · Raspberry Pi 5 (4 GB) inside · USB cable ESP32-S3 CAM → Pi 5 (length: measure along the post and arm) · rain cover over the stepper and battery |
+| Enclosure | IP65 enclosure with cable glands and silica gel on the turntable · Raspberry Pi 5 (4 GB) inside, linked to the ESP32-S3 CAM over its own Wi-Fi hotspot (enclosure must be plastic: metal blocks Wi-Fi) · rain cover over the stepper and battery |
 
 ---
 
@@ -709,10 +722,9 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 ## 16. Known Issues, Caveats & Open Questions
 
 ### 16.1 Open questions (to settle with the adviser)
-1. **ESP32 ↔ Pi link:** USB cable (approval documents) or Wi-Fi via a Pi hotspot (blueprint v15). See 16.4.
-2. **Reservoir level:** the approved design estimates it from total pump run time (what the simulator does). A float switch would be more reliable; not in the parts list.
-3. **Approval sheet increments:** Appendix A follows the revised approval sheet, which is still pending adviser approval.
-4. **Remote access:** "from anywhere" monitoring and live view need an internet link for the phone (pocket router), while detection works offline.
+1. **Reservoir level:** the approved design estimates it from total pump run time (what the simulator does). A float switch would be more reliable; not in the parts list.
+2. **Approval sheet increments:** Appendix A follows the revised approval sheet, which is still pending adviser approval.
+3. **Remote access:** "from anywhere" monitoring and live view need an internet link for the phone (pocket router), while detection works offline.
 
 ### 16.2 Risk register
 | Risk | Impact | Mitigation |
@@ -738,7 +750,7 @@ The (for approval) documents and blueprint v15 disagree on these points. Pick on
 
 | # | Item | (for approval) documents | Blueprint v15 |
 |---|------|--------------------------|---------------|
-| 1 | ESP32 ↔ Pi 5 link | USB cable along the post and arm | Wi-Fi only, Pi 5 hotspot `PestBlaster` (sheets 08, 09, 34) |
+| 1 | ESP32 ↔ Pi 5 link | USB cable along the post and arm | Wi-Fi only, Pi 5 hotspot `PestBlaster` (sheets 08, 09, 34). **Decided 16 Oct: Wi-Fi.** The approval documents need the wording change below |
 | 2 | Leaf undersides | Photographs leaf tops and undersides; head angles upward under leaves | Exposed leaf surfaces and fresh damage only |
 | 3 | Night detection (IR) | Stretch feature | Main feature: night patrol with IR LEDs (B1, sheet 43) |
 | 4 | Leaf damage | Not mentioned | Damage class with its own spray (3 bursts, own 5 s pump cap, sheet 50) |
@@ -759,7 +771,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
 | Battery | Not tracked | Battery level in the app and low-battery alert (INA219) |
 | Live view | None | Live camera view, scanning pauses while open *(planned)* |
-| Device link | HTTP over the network | USB or Wi-Fi, per 16.4 #1 |
+| Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.8 to the firmware |
 
 ---
 
@@ -793,7 +805,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 
 | Milestone | % | Functionalities included |
 |-----------|---|--------------------------|
-| **Increment 1** | 40% | **Hardware foundation.** Build the physical turret: base, post, arm, and the rotating rod with camera and nozzle on it. Get the motors, lift, camera streaming, manual spraying and emergency stop all working. Set up the Raspberry Pi 5 and its USB link to the ESP32-S3. Start collecting photos of real pests for the model. Run the lab safety tests on the deterrent spray. *Done when:* the turret can be told to point anywhere in the full circle and spray on command. |
+| **Increment 1** | 40% | **Hardware foundation.** Build the physical turret: base, post, arm, and the rotating rod with camera and nozzle on it. Get the motors, lift, camera streaming, manual spraying and emergency stop all working. Set up the Raspberry Pi 5 and its link to the ESP32-S3 (the approval sheet says USB; changing to Wi-Fi, section 16.4). Start collecting photos of real pests for the model. Run the lab safety tests on the deterrent spray. *Done when:* the turret can be told to point anywhere in the full circle and spray on command. |
 | **Increment 2** | 60% | **Detection in the loop.** Train the pest-recognition model, run it on the Raspberry Pi 5, and connect it to the turret, so the system can scan around, spot pests and mark where they are. *Done when:* it can do a full scan of a plant and correctly draw boxes around pests, but is not yet allowed to spray automatically. |
 | **Increment 3** | 80% | **Autonomous operation + app.** Turn a spotted pest's position into an aim command, confirm it is really a pest before acting, and only spray once it is sure no person is nearby. Build out the app (live view, alerts, manual control). Seal the electronics against weather. *Done when:* the whole loop (scan, spot, confirm, aim, spray) runs on its own on a test plant. |
 | **Increment 4** | 100% | **Field deployment.** Run unsupervised for several days to catch reliability issues, then put it in a real farm plot next to an untouched control bed for several weeks. Compare damage. Write up the results. *Done when:* there is a working system in the field with real before/after numbers. |
@@ -825,6 +837,7 @@ The software built so far (the old "Increment 1: software without hardware") is 
 | 13 | It stays dry | Hose test: nothing inside the enclosure or rotating joint; Pi stays cool in direct sun |
 | 14 | It survives days unattended | Non-stop for days, including with no internet: no crash, no lost data |
 | 15 | It reduces damage in a real lettuce farm plot | Protected bed vs unprotected bed over a full growing cycle |
+| 16 *(proposed)* | The Wi-Fi link holds | Full patrols with the motors and pump running: % of photos that got a Pi reply and reply time; then switch the hotspot off mid-patrol. Pass: ≥ 99% replied (target, to confirm) and no spray during any dropout |
 
 Software measures that can already be run with the simulator: response time (capture `created_at` → fire event `created_at`) and manual override reliability (command status and timestamps).
 
