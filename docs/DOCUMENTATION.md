@@ -301,7 +301,21 @@ The detector returns a box in image coordinates (0–1). The server converts the
 ### 6.7 Online / offline
 The turret checks in every few seconds. If the server has not heard from it for **30 seconds**, the app shows it as offline. Commands sent while offline wait until it reconnects.
 
-### 6.8 If the Wi-Fi link drops
+### 6.8 Patrol schedule
+The turret does not watch the plants all the time. It runs short patrols on a schedule set in the app, and stays parked between them to save battery (Function list: Patrol Schedule; blueprint v15, sheet 43).
+
+| Window | Time | Every | Notes |
+|--------|------|-------|-------|
+| Day | 07:00–16:00 | 60 min | |
+| Dusk | 17:30–19:30 | 15 min | While there is still enough light for the camera |
+| Night *(stretch)* | 19:30–23:30 | 30 min | Needs the IR illuminator |
+| Manual | any time | — | "Start patrol" in the app |
+
+One patrol (all active stops, 4 photos per stop) takes about 1 minute (≈ 57 s full ring, ≈ 32 s two beds; blueprint estimate, measured on test sheet 19). The live camera view is separate: it is for a person to watch, is not used for detection, and pauses the patrol while open.
+
+Without IR, dusk patrols only work while there is enough light, and the battery claim "one charge covers one evening schedule" (dusk + night, ≈ 2.85 Ah of a 7 Ah SLA, blueprint sheet 43) should be re-stated for the day + dusk schedule.
+
+### 6.9 If the Wi-Fi link drops
 The ESP32 and the Pi talk over the Pi's own hotspot, about 1 m apart on the same turntable. There is no second (wired) link: a dropout fails safe instead.
 
 | Step | What happens | Source |

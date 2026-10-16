@@ -59,6 +59,9 @@ Existing smart garden systems only monitor and alert the user; they take no phys
 PestBlaster is an autonomous rotating turret that stands on the ground between two raised planter boxes. An ESP32-S3 camera on the turret photographs the lettuce leaves, and an on-board **Raspberry Pi 5** checks each photo with a **YOLO11n** model (after OpenCV image preprocessing), with no laptop or internet needed. The turret rotates a full 360°, moves its arm up and down, aims a hanging swivel nozzle at the pest and sprays a short burst of organic, non-toxic botanical deterrent. A mobile app supports monitoring, alerts and manual override.
 
 ```
+  patrol starts  (schedule in the app: day every 60 min, dusk every 15 min; or a button)
+        |
+        v
   start-up: turntable turns until the home switch meets the home tab  (0° set)
         |
         v
@@ -81,11 +84,15 @@ PestBlaster is an autonomous rotating turret that stands on the ground between t
         |
         v
   log capture, detection, spray to SQLite  ──▶  app: photos, alerts, history
+        |
+        v
+  last stop done: park and wait for the next patrol  (≈ 1 min per patrol)
   (ESP32 never sprays on its own · no Pi reply in 5 s = no spray, stop and wait · E-stop cuts all motors)
 ```
 
 | Users can… | How |
 |---|---|
+| Set when it patrols | Short patrols (≈ 1 min) on a schedule set in the app: day 07:00–16:00 every 60 min, dusk 17:30–19:30 every 15 min; parked in between to save battery; start one any time from the app. Night patrols with IR are a stretch feature |
 | Let it find and spray pests on its own | Homing, scan, detect, aim and burst (Function list: Homing, Pest Detection, Target Tracking, Automated Deterrent Firing) |
 | Watch it | App shows online status and position, pest photos with boxes, pest type logs, spray history, reservoir and battery level |
 | Get alerts | Pest detected, reservoir low, battery below a safe voltage |
