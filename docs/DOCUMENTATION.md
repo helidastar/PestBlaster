@@ -785,7 +785,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
 | Battery | Not tracked | Battery level in the app and low-battery alert (INA219) |
 | Live view | None | Live camera view, scanning pauses while open *(planned)* |
-| Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.8 to the firmware |
+| Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.9 to the firmware |
 
 ---
 
