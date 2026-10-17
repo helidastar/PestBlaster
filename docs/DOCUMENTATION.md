@@ -307,13 +307,23 @@ The turret does not watch the plants all the time. It runs short patrols on a sc
 | Window | Time | Every | Notes |
 |--------|------|-------|-------|
 | Day | 07:00–16:00 | 60 min | |
-| Dusk | 17:30–19:30 | 15 min | While there is still enough light for the camera |
+| Dusk | 17:30–19:30 | 15 min | IR illuminator on as the light fades |
 | Night | 19:30–23:30 | 30 min | Uses the IR illuminator (850 nm LED ring) |
 | Manual | any time | — | "Start patrol" in the app |
+
+**One patrol, step by step** (blueprint v15, sheets 20 and 34). The camera is the only pest sensor, and it takes still photos, not video.
+
+1. The turret homes itself so it knows where 0° is.
+2. It turns to a stop (12 stops, 30° apart; stops facing the walkway are skipped), waits for the arm to settle, and takes 4 photos: swivel left and right, each at two tilt angles.
+3. Each photo (640 × 480 JPEG) goes over Wi-Fi to the Raspberry Pi. YOLO11n checks it in about 0.1 s and returns a box, pest type and confidence for anything that looks like a looper, armyworm/cutworm or aphid cluster.
+4. No pest: go on to the next photo or stop. Pest: the Pi turns the box position into angles, the turret aims, takes one more photo to confirm, and if the pest is still there it sprays a 0.4 s burst (pump on, then valve).
+5. After the last stop the patrol ends and the turret parks until the next one.
 
 One patrol (all active stops, 4 photos per stop) takes about 1 minute (≈ 57 s full ring, ≈ 32 s two beds; blueprint estimate, measured on test sheet 19). The live camera view is separate: it is for a person to watch, is not used for detection, and pauses the patrol while open.
 
 The battery claim "one charge covers one evening schedule" covers dusk + night (≈ 2.85 Ah of a 7 Ah SLA, blueprint sheet 43). Day patrols add to that, so the full day + dusk + night use should be measured on the battery test.
+
+**Why not patrol 24 hours:** non-stop patrolling would empty the 7 Ah battery in about 3.5 h. On the schedule the turret is parked most of the time, so one charge covers the evening (dusk and night), when caterpillars come out to feed.
 
 ### 6.9 If the Wi-Fi link drops
 The ESP32 and the Pi talk over the Pi's own hotspot, about 1 m apart on the same turntable. There is no second (wired) link: a dropout fails safe instead.
