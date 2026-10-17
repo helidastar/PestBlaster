@@ -172,10 +172,10 @@ Lettuce is grown on small-scale farms, but it is vulnerable to leaf-feeding pest
 - A fine mist drifts in wind, and botanical sprays may clog the nozzle; a strainer and a plain-water flush are needed.
 - Detection runs on the on-board Raspberry Pi 5, so it works without internet. The ESP32-S3 never sprays on its own; if the Pi or the link fails, it stops all motion and waits.
 - One camera head; a second head on the counter-arm is future work.
-- The IR illuminator for night detection is a stretch feature; night accuracy may be lower.
+- Night detection uses the IR illuminator; night accuracy may be lower than in daylight.
 - Not rated for extreme weather. The reservoir needs periodic manual refilling.
 
-**Project limits for the thesis claims** (project brief and blueprint v15): pests on exposed leaf surfaces and fresh damage only; early-instar larvae only out to 0.90 m; aim valid in wind up to 0.5 m/s; one battery charge covers one evening schedule. Two of these differ from the approval documents (leaf undersides, night detection); see section 16.4.
+**Project limits for the thesis claims** (project brief and blueprint v15): pests on exposed leaf surfaces and fresh damage only; early-instar larvae only out to 0.90 m; aim valid in wind up to 0.5 m/s; one battery charge covers one evening schedule. One of these differs from the approval documents (leaf undersides); see section 16.4.
 
 ---
 
@@ -308,12 +308,12 @@ The turret does not watch the plants all the time. It runs short patrols on a sc
 |--------|------|-------|-------|
 | Day | 07:00–16:00 | 60 min | |
 | Dusk | 17:30–19:30 | 15 min | While there is still enough light for the camera |
-| Night *(stretch)* | 19:30–23:30 | 30 min | Needs the IR illuminator |
+| Night | 19:30–23:30 | 30 min | Uses the IR illuminator (850 nm LED ring) |
 | Manual | any time | — | "Start patrol" in the app |
 
 One patrol (all active stops, 4 photos per stop) takes about 1 minute (≈ 57 s full ring, ≈ 32 s two beds; blueprint estimate, measured on test sheet 19). The live camera view is separate: it is for a person to watch, is not used for detection, and pauses the patrol while open.
 
-Without IR, dusk patrols only work while there is enough light, and the battery claim "one charge covers one evening schedule" (dusk + night, ≈ 2.85 Ah of a 7 Ah SLA, blueprint sheet 43) should be re-stated for the day + dusk schedule.
+The battery claim "one charge covers one evening schedule" covers dusk + night (≈ 2.85 Ah of a 7 Ah SLA, blueprint sheet 43). Day patrols add to that, so the full day + dusk + night use should be measured on the battery test.
 
 ### 6.9 If the Wi-Fi link drops
 The ESP32 and the Pi talk over the Pi's own hotspot, about 1 m apart on the same turntable. There is no second (wired) link: a dropout fails safe instead.
@@ -590,7 +590,7 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 | Power | 12 V 7 Ah SLA battery on the turntable (battery only, no solar panel) · 5 A fuse · SPST main switch · latching emergency stop (cuts all motors, servos and the pump) · INA219 voltage/current sensor · LM2596 12→5 V · XL4015 12→6 V (servos) · AMS1117 3.3 V · 12→5 V 3 A buck for a pocket Wi-Fi router (remote field testing only) |
 | Base / rotation | Pallet-wood base staked to the ground · lazy susan bearing (≈ 300 mm) · plywood turntable disc · NEMA 17 + A4988 on the turntable · GT2 belt, motor pulley and fixed centre pulley · KW12 home switch + home tab · splash skirt |
 | Vertical lift | 12 V linear actuator, 300 mm stroke, built-in end limit switches + DRV8871 · telescoping PVC post (1¼″ sleeve, 1″ inner pipe, 30 cm travel) · actuator clamps and rod bracket |
-| Crossbar and head | PVC T-crossbar: 0.5 m arm + 0.25 m counter-arm, internal steel rod · counterweight end cap · ESP32-S3 CAM (ESP32-S3-WROOM-1 N16R8) · PCA9685 servo driver · PCF8574 I/O expander · OV5640 5 MP (IR-cut removed) · 850 nm IR LED ring (stretch) · hanging swivel mount ±90° · 2 × MG996R (swivel, tilt) · sealed head housing with clear window |
+| Crossbar and head | PVC T-crossbar: 0.5 m arm + 0.25 m counter-arm, internal steel rod · counterweight end cap · ESP32-S3 CAM (ESP32-S3-WROOM-1 N16R8) · PCA9685 servo driver · PCF8574 I/O expander · OV5640 5 MP (IR-cut removed) · 850 nm IR LED ring (night patrols) · hanging swivel mount ±90° · 2 × MG996R (swivel, tilt) · sealed head housing with clear window |
 | Deterrent | Recycled 2–3 L bottle upside down on a stand, UV-shielded · vented refill lid · inline strainer · R385 12 V diaphragm pump + 2-channel relay · coiled 6 mm PU hose · 12 V NC solenoid valve under the arm tip · silicone service loop 150–200 mm · brass misting nozzle |
 | Enclosure | IP65 enclosure with cable glands and silica gel on the turntable · Raspberry Pi 5 (4 GB) inside, linked to the ESP32-S3 CAM over its own Wi-Fi hotspot (enclosure must be plastic: metal blocks Wi-Fi) · rain cover over the stepper and battery |
 
@@ -766,7 +766,7 @@ The (for approval) documents and blueprint v15 disagree on these points. Pick on
 |---|------|--------------------------|---------------|
 | 1 | ESP32 ↔ Pi 5 link | USB cable along the post and arm | Wi-Fi only, Pi 5 hotspot `PestBlaster` (sheets 08, 09, 34). **Decided 16 Oct: Wi-Fi.** The approval documents need the wording change below |
 | 2 | Leaf undersides | Photographs leaf tops and undersides; head angles upward under leaves | Exposed leaf surfaces and fresh damage only |
-| 3 | Night detection (IR) | Stretch feature | Main feature: night patrol with IR LEDs (B1, sheet 43) |
+| 3 | Night detection (IR) | Stretch feature | Main feature: night patrol with IR LEDs (B1, sheet 43). **Decided 17 Oct: main feature (IR illuminator is built).** The approval documents need the wording change |
 | 4 | Leaf damage | Not mentioned | Damage class with its own spray (3 bursts, own 5 s pump cap, sheet 50) |
 | 5 | Scan path | Set stops over the two boxes, three heights | 12 stops, lift down by default, 4 frames per stop (sheet 20); plot setup in the app (sheet 45) |
 | 6 | Base and turntable | 0.5 m square pallet base, ≈ 480 mm disc | 350 × 500 base on planks, Ø396 disc (free boards) |
@@ -840,7 +840,7 @@ The software built so far (the old "Increment 1: software without hardware") is 
 | 2 | Deterrent is safe for the plant | Daily spray for a week: no burns, spots or wilting |
 | 3 | Parts work on their own | Each motor, switch, pump, the camera, the Pi 5 and the Pi–ESP32 link tested alone, many times |
 | 4 | The turret moves reliably | Full turns and lift cycles: no wobble, loosening or frayed wiring at the rotating joint |
-| 5 | The model actually finds pests | On the Pi 5, on unseen photos, in daylight, dim light and (if built) night vision |
+| 5 | The model actually finds pests | On the Pi 5, on unseen photos, in daylight, dim light and at night with the IR illuminator |
 | 6 | It doesn't spray things that aren't pests | Clean plants, dirt, dead leaves, helpful bugs: it stays quiet |
 | 7 | The spray lands on target | Marked targets around the full circle and at different heights: distance from target |
 | 8 | Each burst is consistent | Weigh many bursts; sizes stay close |
@@ -866,7 +866,7 @@ Train **YOLO11n** in Google Colab on three classes: looper, armyworm/cutworm, ap
 
 ### C.2 Dataset
 - Public pest image datasets (e.g. IP102, Roboflow Universe pest sets) for the three pests, filtered to leafy vegetables where possible.
-- **Our own photos** of lettuce taken with the turret camera (OV5640) at working distance, different times of day (and at night with the IR LEDs, if night detection is built). These matter most because they match what the turret will see.
+- **Our own photos** of lettuce taken with the turret camera (OV5640) at working distance, different times of day (and at night with the IR LEDs). These matter most because they match what the turret will see.
 - Negative photos (healthy leaves, soil, water drops, leaf damage without a pest) so the model learns not to spray those.
 - Label with bounding boxes; split 70 / 20 / 10 (train / validation / test) by plant, not by photo, so near-duplicate photos do not leak into the test set.
 
