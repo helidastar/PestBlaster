@@ -1,0 +1,38 @@
+# Copy to training/sources.yaml and describe every folder you put in training/raw/.
+#
+# Each source folder is a YOLO export (Roboflow "YOLOv8" format, CVAT "YOLO 1.1",
+# Label Studio "YOLO"): images plus a .txt label file with the same name, and a
+# data.yaml or classes.txt that lists the source's class names.
+#
+#   map:       source class name -> our class (looper, armyworm_cutworm, aphid_colony)
+#              or null to drop boxes of that class. Unlisted classes are dropped too.
+#   group:     optional regex. Photos whose names give the same match are kept in the
+#              same split (use it for several photos of one plant, so near-copies of a
+#              test photo never end up in training).
+#   negatives: true for a folder of photos with NO pests (healthy leaves, soil, water
+#              drops, holes without a pest). They teach the model when not to spray.
+
+sources:
+  roboflow-aphids:
+    map:
+      aphid: aphid_colony
+      aphids: aphid_colony
+
+  roboflow-caterpillars:
+    map:
+      armyworm: armyworm_cutworm
+      cutworm: armyworm_cutworm
+      spodoptera litura: armyworm_cutworm
+      cabbage looper: looper
+      looper: looper
+      diamondback moth: null   # not one of our pests
+
+  our-garden-2026-10:
+    map:
+      looper: looper
+      armyworm_cutworm: armyworm_cutworm
+      aphid_colony: aphid_colony
+    group: '^(plant\d+)_'   # plant03_top_01.jpg and plant03_under_02.jpg stay together
+
+  healthy-leaves:
+    negatives: true

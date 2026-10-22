@@ -8,3 +8,13 @@ next-env.d.ts
 data/*
 !data/.gitkeep
 .DS_Store
+
+# training data and model files (share through Google Drive, not git)
+training/raw/
+training/dataset/
+training/dataset.zip
+training/runs/
+training/models/
+training/sources.yaml
+__pycache__/
+.pytest_cache/

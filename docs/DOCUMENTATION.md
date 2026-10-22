@@ -881,7 +881,9 @@ Software measures that can already be run with the simulator: response time (cap
 *(planned — Increment 2)*
 
 ### C.1 Approach
-Train **YOLO11n** in Google Colab on three classes: looper, armyworm/cutworm, aphid cluster. Export it to NCNN and run it on the Raspberry Pi 5 after OpenCV preprocessing, behind a FastAPI + Ultralytics service that follows the contract in section 13.2. The Next.js server then only needs `DETECTOR=http`.
+The step-by-step guide, scripts and Colab notebook are in [`training/`](../training/README.md); results of each run are logged in [`docs/training-runs/`](training-runs/README.md).
+
+Train **YOLO11n** in Google Colab on three classes: looper, armyworm/cutworm, aphid colony (app codes `looper`, `armyworm_cutworm`, `aphid_colony`, section 6.1). Export it to NCNN and run it on the Raspberry Pi 5 after OpenCV preprocessing, behind a FastAPI + Ultralytics service (`training/serve.py`) that follows the contract in section 13.2. The Next.js server then only needs `DETECTOR=http`.
 
 ### C.2 Dataset
 - Public pest image datasets (e.g. IP102, Roboflow Universe pest sets) for the three pests, filtered to leafy vegetables where possible.
