@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { HOLD_REASON_TEXT } from "./decision";
 import { PESTS, type PestType } from "./pests";
 import type {
   Alert,
@@ -161,7 +162,7 @@ export function saveCapture(
   if (target && input.decision.action === "fire") {
     maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Spraying now.`);
   } else if (target && input.decision.action === "hold" && input.decision.reason !== "below_threshold") {
-    maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Not sprayed: auto-spray is not active.`);
+    maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Not sprayed: ${HOLD_REASON_TEXT[input.decision.reason].toLowerCase()}.`);
   }
   return captureId;
 }
