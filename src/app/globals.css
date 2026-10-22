@@ -20,7 +20,7 @@
   --spray-soft: #d2ecef;
   --danger: #b42318;
   --danger-soft: #fbe3df;
-  --pest-dbm: #b07a12;
+  --pest-army: #b07a12;
   --pest-looper: #7b4fb8;
   --pest-aphid: #c8406e;
 
@@ -65,7 +65,7 @@
     --spray-soft: #133239;
     --danger: #f07a6a;
     --danger-soft: #3a1d18;
-    --pest-dbm: #b8862a;
+    --pest-army: #b8862a;
     --pest-looper: #9474dc;
     --pest-aphid: #db5f87;
     --scope: #1a3321;
@@ -91,7 +91,7 @@
   --spray-soft: #133239;
   --danger: #f07a6a;
   --danger-soft: #3a1d18;
-  --pest-dbm: #b8862a;
+  --pest-army: #b8862a;
   --pest-looper: #9474dc;
   --pest-aphid: #db5f87;
   --scope: #1a3321;
@@ -649,7 +649,7 @@ a.card-note:hover { text-decoration: underline; }
 /* ---------- the scope (signature) ---------- */
 
 .scope {
-  --pest-dbm: #d7a23f;
+  --pest-army: #d7a23f;
   --pest-looper: #a98aea;
   --pest-aphid: #ef7aa0;
   position: relative;

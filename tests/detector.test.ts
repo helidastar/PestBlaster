@@ -33,8 +33,8 @@ describe("http detector", () => {
     const out = parseDetections([
       { pest: "looper", confidence: 0.9, bbox: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 } },
       { pest: "grasshopper", confidence: 0.9, bbox: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 } },
-      { pest: "aphid_cluster", confidence: 0.9, bbox: { x: 2, y: 0.1, w: 0.1, h: 0.1 } },
-      { pest: "aphid_cluster", confidence: "high", bbox: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 } },
+      { pest: "aphid_colony", confidence: 0.9, bbox: { x: 2, y: 0.1, w: 0.1, h: 0.1 } },
+      { pest: "aphid_colony", confidence: "high", bbox: { x: 0.1, y: 0.1, w: 0.1, h: 0.1 } },
       null,
     ]);
     expect(out.map((d) => d.pest)).toEqual(["looper"]);

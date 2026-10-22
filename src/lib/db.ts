@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { RENAMED_PESTS } from "./pests";
 
 export const DEFAULT_DEVICE_ID = "turret-1";
 
@@ -81,7 +82,17 @@ export function openDb(file: string): DatabaseSync {
     DEFAULT_DEVICE_ID,
     "Lettuce bed turret",
   );
+  migrate(db);
   return db;
+}
+
+/** Brings a database made by an older version of the app up to date. */
+function migrate(db: DatabaseSync): void {
+  // Pest list changed to the approved targets: old class names are mapped to the new ones.
+  for (const [from, to] of Object.entries(RENAMED_PESTS)) {
+    db.prepare("UPDATE detections SET pest = ? WHERE pest = ?").run(to, from);
+    db.prepare("UPDATE fire_events SET pest = ? WHERE pest = ?").run(to, from);
+  }
 }
 
 const globalForDb = globalThis as unknown as { pestblasterDb?: DatabaseSync };

@@ -21,7 +21,7 @@ import type { Detection } from "@/lib/types";
 
 let db: DatabaseSync;
 const pose = { pan: 30, lift: 150, swivel: 60 };
-const larva: Detection = { pest: "diamondback_larva", confidence: 0.9, bbox: { x: 0.5, y: 0.5, w: 0.1, h: 0.05 } };
+const larva: Detection = { pest: "armyworm_cutworm", confidence: 0.9, bbox: { x: 0.5, y: 0.5, w: 0.1, h: 0.05 } };
 
 beforeEach(() => {
   db = openDb(":memory:");
@@ -52,7 +52,7 @@ describe("store", () => {
     });
     const id = saveCapture(db, { deviceId: DEFAULT_DEVICE_ID, image: "a.svg", pose, detections: [larva], decision });
     const fire = recordFire(db, { deviceId: DEFAULT_DEVICE_ID, source: "auto", durationMs: 400, pose, captureId: id });
-    expect(fire.pest).toBe("diamondback_larva");
+    expect(fire.pest).toBe("armyworm_cutworm");
     expect(lastFireAt(db, DEFAULT_DEVICE_ID)).not.toBeNull();
     const [cap] = listPestCaptures(db);
     expect(cap.decision).toBe("fire");
@@ -89,7 +89,7 @@ describe("store", () => {
     const days = dailyStats(db, 7);
     expect(days).toHaveLength(7);
     const today = days[6];
-    expect(today.counts.diamondback_larva).toBe(2);
+    expect(today.counts.armyworm_cutworm).toBe(2);
     expect(today.sprays).toBe(1);
     expect(listFires(db)).toHaveLength(1);
   });

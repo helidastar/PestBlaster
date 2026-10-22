@@ -4,7 +4,7 @@
 
 **Autonomous Rotating Turret for Detection and Organic Deterrence of Leaf-Feeding Pests in Lettuce Crops**
 
-A garden turret that finds diamondback moth larvae, loopers and aphids on lettuce and sprays them with an organic deterrent right away, with no one watching. Growers follow and control it from their phone.
+A garden turret that finds loopers, armyworms/cutworms and aphid colonies on lettuce and sprays them with an organic deterrent right away, with no one watching. Growers follow and control it from their phone.
 
 ![Status](https://img.shields.io/badge/status-increment%201%20(software)-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-black?logo=next.js&logoColor=white)

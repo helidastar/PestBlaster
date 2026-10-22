@@ -3,7 +3,7 @@ import { PESTS, type PestType } from "@/lib/pests";
 /** Each pest has its own shape as well as color, so it never depends on color alone. */
 export function PestShape({ pest, x, y, r = 6, className }: { pest: PestType; x: number; y: number; r?: number; className?: string }) {
   const fill = PESTS[pest].color;
-  if (pest === "diamondback_larva") {
+  if (pest === "armyworm_cutworm") {
     return <circle className={className} cx={x} cy={y} r={r} style={{ fill }} />;
   }
   if (pest === "looper") {

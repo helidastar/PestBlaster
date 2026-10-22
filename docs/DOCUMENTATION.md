@@ -40,7 +40,7 @@
 | **School** | Cebu Institute of Technology – University |
 | **Adviser** | Engr. Nikko D. Alferez |
 | **Primary users** | Growers in school and community lettuce gardens |
-| **Target pests** | Diamondback moth larvae, loopers, aphid clusters |
+| **Target pests** | Armyworm / cutworme, loopers, aphid clusters |
 | **Frontend + API** | Next.js 15 (App Router), React 19, TypeScript |
 | **Database** | SQLite (built into Node.js 22) — file in `data/` |
 | **Pest detection** | Pluggable: simulated stand-in (Increment 1) → trained model served over HTTP *(planned, Increment 2)* |
@@ -109,13 +109,13 @@ To look at a checked version: `git checkout increment-1`. To restore it: `git ch
 ## 3. Overview
 
 ### 3.1 Problem statement
-Lettuce is a common vegetable crop in Cebu, but it is highly vulnerable to leaf-feeding pests such as diamondback moth larvae, loopers and aphids. They feed directly on the leaves and, left unchecked, cause skeletonized leaves, stunted growth and significant yield loss. Existing smart garden systems only **monitor and alert** — they take no physical action. In gardens without constant supervision, larvae keep feeding in the time between an alert and someone responding. There is no low-cost, autonomous system that detects these pests on lettuce and **immediately responds with a physical deterrent**.
+Lettuce is a common vegetable crop in Cebu, but it is highly vulnerable to leaf-feeding pests such as loopers, armyworms/cutworms and aphids. They feed directly on the leaves and, left unchecked, cause skeletonized leaves, stunted growth and significant yield loss. Existing smart garden systems only **monitor and alert** — they take no physical action. In gardens without constant supervision, larvae keep feeding in the time between an alert and someone responding. There is no low-cost, autonomous system that detects these pests on lettuce and **immediately responds with a physical deterrent**.
 
 ### 3.2 Goals
 **General objective:** design and develop PestBlaster, an autonomous pest detection and deterrence turret that protects lettuce crops by detecting leaf-feeding pests and immediately dispersing an organic deterrent.
 
 **Specific objectives**
-1. A machine vision pipeline that detects and classifies diamondback moth larvae, loopers and aphid clusters.
+1. A machine vision pipeline that detects and classifies loopers, armyworms/cutworms and aphid colonies.
 2. A stepper-driven 360° rotating turret with a telescoping post and a hanging swivel camera mount that can aim anywhere on the plant, including leaf undersides, from the top down to soil level.
 3. A valve/pump control system that releases timed organic deterrent bursts once a pest is confirmed.
 4. A companion mobile app to monitor pest activity, view detection logs and manage the system remotely.
@@ -234,9 +234,9 @@ Design priorities: readable outdoors on a phone, large touch targets, plain lang
 ### 6.1 Pest types
 | Code | Name | Scientific name | Notes for the model |
 |------|------|-----------------|---------------------|
-| `diamondback_larva` | Diamondback moth larva | *Plutella xylostella* | Small, pale green; windowpane holes |
+| `armyworm_cutworm` | Armyworm / cutworm | *Spodoptera litura*, *Agrotis* spp. | Smooth, dark side stripes; feeds at dusk and night |
 | `looper` | Looper | *Trichoplusia ni* | Green, arches its body; blends into the leaf (hardest class) |
-| `aphid_cluster` | Aphid cluster | Aphididae | Groups of tiny insects, mostly on leaf undersides |
+| `aphid_colony` | Aphid colony | Aphididae | Groups of tiny insects, mostly on leaf undersides |
 
 ### 6.2 Turret pose (the coordinate system)
 | Axis | Range | Meaning |
@@ -370,9 +370,9 @@ Serverless hosts (e.g. Vercel) are **not** suitable while the database is a loca
 | `--leaf` | `#3d6b2a` | `#8fc46a` | Primary actions, "on" states |
 | `--spray` | `#1a7488` | `#4fb3c6` | Anything to do with spraying / deterrent |
 | `--danger` | `#b42318` | `#f07a6a` | Offline, refill needed |
-| `--pest-dbm` | `#b07a12` | `#b8862a` | Diamondback moth larva |
+| `--pest-army` | `#b07a12` | `#b8862a` | Armyworm / cutworm |
 | `--pest-looper` | `#7b4fb8` | `#9474dc` | Looper |
-| `--pest-aphid` | `#c8406e` | `#db5f87` | Aphid cluster |
+| `--pest-aphid` | `#c8406e` | `#db5f87` | Aphid colony |
 
 The three pest colors were checked with a colorblind-safety validator in both light and dark mode. Each pest also has its own **shape** (larva ●, looper ■, aphids ▲), so identity never depends on color alone.
 
@@ -514,12 +514,12 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 {
   "captureId": 128,
   "detections": [
-    { "pest": "diamondback_larva", "confidence": 0.86,
+    { "pest": "armyworm_cutworm", "confidence": 0.86,
       "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } }
   ],
   "decision": {
     "action": "fire",
-    "target": { "pest": "diamondback_larva", "confidence": 0.86, "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } },
+    "target": { "pest": "armyworm_cutworm", "confidence": 0.86, "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } },
     "aim": { "pan": 101.8, "lift": 150, "swivel": 56.9 },
     "burstMs": 400
   }
@@ -769,7 +769,7 @@ B.2 and B.6 can already be run in software with the simulator in Increment 1.
 *(planned — Increment 2)*
 
 ### C.1 Approach
-Train a small object detector (for example **YOLOv8n / YOLO11n**) on three classes: `diamondback_larva`, `looper`, `aphid_cluster`. Run it on the server behind a tiny HTTP service that follows the contract in section 13.2 (for example Python + FastAPI + Ultralytics). The Next.js server then only needs `DETECTOR=http`.
+Train a small object detector (for example **YOLOv8n / YOLO11n**) on three classes: `looper`, `armyworm_cutworm`, `aphid_colony`. Run it on the server behind a tiny HTTP service that follows the contract in section 13.2 (for example Python + FastAPI + Ultralytics). The Next.js server then only needs `DETECTOR=http`.
 
 ### C.2 Dataset
 - Public pest image datasets (e.g. IP102, Roboflow Universe pest sets) for the three pests, filtered to leafy vegetables where possible.

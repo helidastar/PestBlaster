@@ -146,7 +146,7 @@ export default function Home() {
           ) : (
             <div className="empty">
               <strong>No pests seen yet</strong>
-              When the turret spots a larva, looper or aphids, the photo shows up here.
+              When the turret spots a looper, an armyworm or cutworm, or an aphid colony, the photo shows up here.
             </div>
           )}
         </section>

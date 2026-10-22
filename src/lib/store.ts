@@ -375,7 +375,7 @@ export function dailyStats(db: DatabaseSync, days = 7, now = new Date()): DaySta
   const local = new Date(now.getTime() + LOCAL_UTC_OFFSET_H * 3600_000);
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(local.getTime() - i * 86400_000).toISOString().slice(0, 10);
-    out.push({ day: d, counts: { diamondback_larva: 0, looper: 0, aphid_cluster: 0 }, sprays: 0 });
+    out.push({ day: d, counts: { armyworm_cutworm: 0, looper: 0, aphid_colony: 0 }, sprays: 0 });
   }
   const byDay = new Map(out.map((s) => [s.day, s]));
   const pestRows = db

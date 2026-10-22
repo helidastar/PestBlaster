@@ -60,10 +60,10 @@ function randomPests(p: Pose): Detection[] {
   for (let i = 0; i < count; i++) {
     // Aphids gather under leaves; larvae and loopers are more often on top.
     const pest: PestType = underside
-      ? Math.random() < 0.6 ? "aphid_cluster" : PEST_TYPES[Math.floor(Math.random() * 2)]
+      ? Math.random() < 0.6 ? "aphid_colony" : PEST_TYPES[Math.floor(Math.random() * 2)]
       : PEST_TYPES[Math.floor(Math.random() * 3)];
-    const size = { diamondback_larva: [0.09, 0.05], looper: [0.13, 0.07], aphid_cluster: [0.15, 0.12] }[pest];
-    const base = { diamondback_larva: 0.84, looper: 0.7, aphid_cluster: 0.82 }[pest];
+    const size = { armyworm_cutworm: [0.12, 0.05], looper: [0.13, 0.07], aphid_colony: [0.15, 0.12] }[pest];
+    const base = { armyworm_cutworm: 0.84, looper: 0.7, aphid_colony: 0.82 }[pest];
     out.push({
       pest,
       confidence: base - (underside ? 0.08 : 0),
@@ -82,11 +82,12 @@ function drawPest(d: Detection): string {
   const W = 640, H = 480;
   const x = d.bbox.x * W, y = d.bbox.y * H, w = d.bbox.w * W, h = d.bbox.h * H;
   const cx = x + w / 2, cy = y + h / 2;
-  if (d.pest === "diamondback_larva") {
+  if (d.pest === "armyworm_cutworm") {
     const segs = Array.from({ length: 5 }, (_, i) =>
-      `<ellipse cx="${x + (i + 0.5) * (w / 5)}" cy="${cy}" rx="${w / 9}" ry="${h / 2.4}" fill="#b9d98a" stroke="#7fa35a" stroke-width="1"/>`,
+      `<ellipse cx="${x + (i + 0.5) * (w / 5)}" cy="${cy}" rx="${w / 9}" ry="${h / 2.4}" fill="#8c7a4e" stroke="#4d4026" stroke-width="1"/>`,
     ).join("");
-    return `<g>${segs}<circle cx="${x + w - 3}" cy="${cy}" r="${h / 4}" fill="#6b5a3a"/></g>`;
+    const stripe = `<line x1="${x + 2}" y1="${cy + h / 5}" x2="${x + w - 4}" y2="${cy + h / 5}" stroke="#2f2716" stroke-width="1.5"/>`;
+    return `<g>${segs}${stripe}<circle cx="${x + w - 3}" cy="${cy}" r="${h / 4}" fill="#3a2f1c"/></g>`;
   }
   if (d.pest === "looper") {
     return `<path d="M ${x} ${y + h} Q ${cx} ${y - h * 0.6} ${x + w} ${y + h}" fill="none" stroke="#8fc56a" stroke-width="${h / 2.2}" stroke-linecap="round"/>
