@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { DatabaseSync } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { DEFAULT_DEVICE_ID, openDb } from "@/lib/db";
 import { decide } from "@/lib/decision";
 import {
@@ -11,6 +14,7 @@ import {
   listFires,
   listPestCaptures,
   queueCommand,
+  queueStop,
   recordFire,
   recordHeartbeat,
   saveCapture,
@@ -21,7 +25,7 @@ import type { Detection } from "@/lib/types";
 
 let db: DatabaseSync;
 const pose = { pan: 30, lift: 150, swivel: 60 };
-const larva: Detection = { pest: "diamondback_larva", confidence: 0.9, bbox: { x: 0.5, y: 0.5, w: 0.1, h: 0.05 } };
+const larva: Detection = { pest: "armyworm_cutworm", confidence: 0.9, bbox: { x: 0.5, y: 0.5, w: 0.1, h: 0.05 } };
 
 beforeEach(() => {
   db = openDb(":memory:");
@@ -52,7 +56,7 @@ describe("store", () => {
     });
     const id = saveCapture(db, { deviceId: DEFAULT_DEVICE_ID, image: "a.svg", pose, detections: [larva], decision });
     const fire = recordFire(db, { deviceId: DEFAULT_DEVICE_ID, source: "auto", durationMs: 400, pose, captureId: id });
-    expect(fire.pest).toBe("diamondback_larva");
+    expect(fire.pest).toBe("armyworm_cutworm");
     expect(lastFireAt(db, DEFAULT_DEVICE_ID)).not.toBeNull();
     const [cap] = listPestCaptures(db);
     expect(cap.decision).toBe("fire");
@@ -89,8 +93,42 @@ describe("store", () => {
     const days = dailyStats(db, 7);
     expect(days).toHaveLength(7);
     const today = days[6];
-    expect(today.counts.diamondback_larva).toBe(2);
+    expect(today.counts.armyworm_cutworm).toBe(2);
     expect(today.sprays).toBe(1);
     expect(listFires(db)).toHaveLength(1);
+  });
+
+  it("stop drops a spray the turret has not picked up yet", () => {
+    const fire = queueCommand(db, DEFAULT_DEVICE_ID, "fire", { durationMs: 3000 });
+    queueStop(db, DEFAULT_DEVICE_ID);
+    const sent = takePendingCommands(db, DEFAULT_DEVICE_ID);
+    expect(sent.map((c) => c.type)).toEqual(["stop"]);
+    const row = db.prepare("SELECT status FROM commands WHERE id = ?").get(fire.id) as { status: string };
+    expect(row.status).toBe("failed");
+  });
+
+  it("upgrades a database from the old pest list", () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pb-")), "old.db");
+    const old = new DatabaseSync(file);
+    old.exec(`
+      CREATE TABLE commands (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, device_id TEXT NOT NULL, created_at TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('fire','move','home','set_mode')),
+        payload TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','done','failed')),
+        done_at TEXT
+      );
+      INSERT INTO commands (device_id, created_at, type) VALUES ('turret-1', '2026-09-29T00:00:00Z', 'home');
+    `);
+    old.close();
+    const up = openDb(file);
+    const decision = { action: "hold" as const, reason: "auto_fire_off" as const, target: null };
+    const det = { ...larva, pest: "diamondback_larva" } as unknown as Detection;
+    saveCapture(up, { deviceId: DEFAULT_DEVICE_ID, image: null, pose, detections: [det], decision });
+    up.close();
+    const again = openDb(file);
+    expect(listPestCaptures(again, {})[0].detections[0].pest).toBe("armyworm_cutworm");
+    expect(queueStop(again, DEFAULT_DEVICE_ID).type).toBe("stop");
+    expect((again.prepare("SELECT COUNT(*) AS n FROM commands").get() as { n: number }).n).toBe(2);
   });
 });

@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Watch and control the PestBlaster lettuce pest turret.",
     start_url: "/",
     display: "standalone",
-    background_color: "#eef2e2",
-    theme_color: "#3d6b2a",
+    background_color: "#e9efdd",
+    theme_color: "#173a22",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
 }

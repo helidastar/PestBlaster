@@ -1,5 +1,5 @@
-// The three leaf-feeding pests in the PestBlaster scope (see Scope and Limitations).
-export const PEST_TYPES = ["diamondback_larva", "looper", "aphid_cluster"] as const;
+// The three leaf-feeding pests on the Approval Sheet; keys match the YOLO11n class names.
+export const PEST_TYPES = ["looper", "armyworm_cutworm", "aphid_colony"] as const;
 export type PestType = (typeof PEST_TYPES)[number];
 
 export interface PestInfo {
@@ -10,11 +10,11 @@ export interface PestInfo {
 }
 
 export const PESTS: Record<PestType, PestInfo> = {
-  diamondback_larva: {
-    label: "Diamondback moth larva",
-    scientific: "Plutella xylostella",
-    note: "Small pale-green larva, wriggles backward when touched. Leaves windowpane holes.",
-    color: "var(--pest-dbm)",
+  armyworm_cutworm: {
+    label: "Armyworm / cutworm",
+    scientific: "Spodoptera litura, Agrotis spp.",
+    note: "Smooth caterpillar with dark side stripes. Feeds mostly at dusk and at night, chewing large holes and leaf edges.",
+    color: "var(--pest-army)",
   },
   looper: {
     label: "Looper",
@@ -22,13 +22,16 @@ export const PESTS: Record<PestType, PestInfo> = {
     note: "Green caterpillar that arches its body as it moves. Chews ragged holes.",
     color: "var(--pest-looper)",
   },
-  aphid_cluster: {
-    label: "Aphid cluster",
+  aphid_colony: {
+    label: "Aphid colony",
     scientific: "Aphididae",
-    note: "Groups of tiny soft-bodied insects, usually on leaf undersides.",
+    note: "Colonies of tiny soft-bodied insects on the leaves and new growth.",
     color: "var(--pest-aphid)",
   },
 };
+
+/** Class names used before the approved pest list (kept so old logs still open). */
+export const RENAMED_PESTS: Record<string, PestType> = { diamondback_larva: "armyworm_cutworm", aphid_cluster: "aphid_colony" };
 
 export function isPestType(value: unknown): value is PestType {
   return typeof value === "string" && (PEST_TYPES as readonly string[]).includes(value);

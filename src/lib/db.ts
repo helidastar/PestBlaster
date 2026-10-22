@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import fs from "node:fs";
 import path from "node:path";
+import { RENAMED_PESTS } from "./pests";
 
 export const DEFAULT_DEVICE_ID = "turret-1";
 
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS commands (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   device_id TEXT NOT NULL REFERENCES device(id),
   created_at TEXT NOT NULL,
-  type TEXT NOT NULL CHECK (type IN ('fire','move','home','set_mode')),
+  type TEXT NOT NULL CHECK (type IN ('fire','stop','move','home','set_mode')),
   payload TEXT NOT NULL DEFAULT '{}',
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','done','failed')),
   done_at TEXT
@@ -81,7 +82,27 @@ export function openDb(file: string): DatabaseSync {
     DEFAULT_DEVICE_ID,
     "Lettuce bed turret",
   );
+  migrate(db);
   return db;
+}
+
+/** Brings a database made by an older version of the app up to date. */
+function migrate(db: DatabaseSync): void {
+  // Pest list changed to the approved targets: old class names are mapped to the new ones.
+  for (const [from, to] of Object.entries(RENAMED_PESTS)) {
+    db.prepare("UPDATE detections SET pest = ? WHERE pest = ?").run(to, from);
+    db.prepare("UPDATE fire_events SET pest = ? WHERE pest = ?").run(to, from);
+  }
+  // The "stop" command was added after the first release; SQLite can't change a CHECK, so rebuild the table.
+  const commands = db.prepare("SELECT sql FROM sqlite_master WHERE name = 'commands'").get() as { sql: string } | undefined;
+  if (commands && !commands.sql.includes("'stop'")) {
+    db.exec(`
+      ALTER TABLE commands RENAME TO commands_old;
+      ${SCHEMA.slice(SCHEMA.indexOf("CREATE TABLE IF NOT EXISTS commands"), SCHEMA.indexOf("CREATE TABLE IF NOT EXISTS alerts"))}
+      INSERT INTO commands SELECT * FROM commands_old;
+      DROP TABLE commands_old;
+    `);
+  }
 }
 
 const globalForDb = globalThis as unknown as { pestblasterDb?: DatabaseSync };

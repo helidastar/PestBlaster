@@ -1,4 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
+import { HOLD_REASON_TEXT } from "./decision";
 import { PESTS, type PestType } from "./pests";
 import type {
   Alert,
@@ -161,7 +162,7 @@ export function saveCapture(
   if (target && input.decision.action === "fire") {
     maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Spraying now.`);
   } else if (target && input.decision.action === "hold" && input.decision.reason !== "below_threshold") {
-    maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Not sprayed: auto-spray is not active.`);
+    maybePestAlert(db, target.pest, `${PESTS[target.pest].label} found. Not sprayed: ${HOLD_REASON_TEXT[input.decision.reason].toLowerCase()}.`);
   }
   return captureId;
 }
@@ -303,6 +304,14 @@ export function queueCommand(
   return toCommand(db.prepare("SELECT * FROM commands WHERE id = ?").get(Number(res.lastInsertRowid)) as Row);
 }
 
+/** Stops a manual spray: drops any spray the turret has not picked up yet, then tells it to stop. */
+export function queueStop(db: DatabaseSync, deviceId: string): Command {
+  db.prepare(
+    "UPDATE commands SET status = 'failed', done_at = ? WHERE device_id = ? AND type = 'fire' AND status = 'pending'",
+  ).run(nowIso(), deviceId);
+  return queueCommand(db, deviceId, "stop");
+}
+
 /** Hands pending commands to the turret and marks them as sent. */
 export function takePendingCommands(db: DatabaseSync, deviceId: string): Command[] {
   const rows = db
@@ -375,7 +384,7 @@ export function dailyStats(db: DatabaseSync, days = 7, now = new Date()): DaySta
   const local = new Date(now.getTime() + LOCAL_UTC_OFFSET_H * 3600_000);
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(local.getTime() - i * 86400_000).toISOString().slice(0, 10);
-    out.push({ day: d, counts: { diamondback_larva: 0, looper: 0, aphid_cluster: 0 }, sprays: 0 });
+    out.push({ day: d, counts: { armyworm_cutworm: 0, looper: 0, aphid_colony: 0 }, sprays: 0 });
   }
   const byDay = new Map(out.map((s) => [s.day, s]));
   const pestRows = db

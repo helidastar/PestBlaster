@@ -9,6 +9,7 @@ import { DropIcon } from "@/components/Icons";
 
 const COMMAND_TEXT: Record<string, string> = {
   fire: "Spray now",
+  stop: "Stop spray",
   move: "Move turret",
   home: "Return home",
   set_mode: "Change mode",
@@ -56,16 +57,18 @@ export default function ControlPage() {
 
   return (
     <>
-      <h1 className="page-title">Control</h1>
-      <p className="page-lede">Take over the turret by hand, or pause it while you harvest or refill.</p>
+      <header className="page-head">
+        <h1 className="page-title">Control</h1>
+        <p className="page-lede">Take over the turret by hand, or pause it while you harvest or refill.</p>
+      </header>
       {!online && (
         <div className="banner">
           The turret is offline (last seen {timeAgo(device.lastSeen)}). Commands will wait until it reconnects.
         </div>
       )}
 
-      <section className="card">
-        <div className="switch-row" style={{ marginBottom: 14 }}>
+      <section className="card leaf spray-card">
+        <div className="switch-row">
           <div>
             <strong>{paused ? "Turret paused" : "Turret running"}</strong>
             <span className="muted" style={{ fontSize: 14 }}>
@@ -84,13 +87,18 @@ export default function ControlPage() {
             }
           />
         </div>
-        <button
-          className="btn btn-spray"
-          style={{ width: "100%" }}
-          onClick={() => run("Spray sent", () => send("/api/commands", "POST", { type: "fire", durationMs: draft.burstMs }))}
-        >
-          <DropIcon /> Spray now ({draft.burstMs} ms)
-        </button>
+        <div className="btn-row">
+          <button
+            className="btn btn-spray"
+            style={{ flex: 1, whiteSpace: "nowrap" }}
+            onClick={() => run("Spray sent", () => send("/api/commands", "POST", { type: "fire", durationMs: draft.burstMs }))}
+          >
+            <DropIcon /> Spray now ({draft.burstMs} ms)
+          </button>
+          <button className="btn" style={{ whiteSpace: "nowrap" }} onClick={() => run("Stop sent", () => send("/api/commands", "POST", { type: "stop" }))}>
+            Stop spray
+          </button>
+        </div>
       </section>
 
       <section className="card">
@@ -217,6 +225,7 @@ function Slider(props: {
         step={props.step ?? 1}
         value={props.value}
         onChange={(e) => props.onChange(Number(e.target.value))}
+        style={{ ["--p" as string]: `${((props.value - props.min) / (props.max - props.min)) * 100}%` }}
       />
       {props.hint && <span className="hint">{props.hint}</span>}
     </div>
