@@ -244,8 +244,9 @@ A mobile-first web app. It can be added to the phone's home screen (web app mani
 |--------|----------|
 | **Turret** (home) | Online/offline status · auto-spray on/off · **turret map** (top-down view: arm shows pan angle, rings show height from soil to top, shapes show recent pest sightings, a ripple marks the latest spray) · lift gauge · pan/lift/swivel readout · auto-spray switch · reservoir bottle level · today's counts (spots checked, pests seen, sprays) · latest pest photo with what the turret did |
 | **Pests** | Every photo with a pest, newest first, with detector boxes and confidence · filter by pest · shows whether it was sprayed or why not · pose and leaf top / under leaf |
-| **Control** | Pause / resume turret · **Spray now** · aim by hand (pan, lift, swivel sliders → Move turret, Return home) · spray settings (confidence threshold, spray length, wait between sprays, low-bottle warning) · recent commands with progress |
+| **Control** | Pause / resume turret · **Spray now** and **Stop spray** · aim by hand (pan, lift, swivel sliders → Move turret, Return home) · spray settings (confidence threshold, spray length, wait between sprays, low-bottle warning) · recent commands with progress |
 | **History** | Trends: stacked bars of pests per day for 7 days, with hover details and a table view · Sprays: every spray (auto or manual) with pest and pose · Alerts: pest found, refill needed (unread badge on the tab) |
+| **Every screen** | **Hold to spray** button: hold for 0.7 s to start, spray lasts while held (at most 3 s), releasing sends `stop` · **alert pop-ups** for new pest and refill alerts (checked every 2 s, shown for 8 s, tap to open History) |
 
 Design priorities: readable outdoors on a phone, large touch targets, plain language ("Spray now", not "Trigger actuator"), and every hold reason spelled out so the grower knows why it did not spray.
 
@@ -758,7 +759,7 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 | Link to the Pi fails | Turret cannot get decisions | Firmware stops all motion and waits (never sprays blind) |
 | Wrong spray on a leaf with no pest | Wasted deterrent | Confidence threshold + cooldown, both adjustable in the app |
 | Arm sway in wind | Misaimed spray | Re-capture after aiming before spraying *(planned firmware step)*; aim claimed valid only up to 0.5 m/s wind |
-| Pi overheats in the sealed enclosure | Slow or stopped detection | Active cooler and box fan; test in direct sun (Appendix B #13) |
+| Pi overheats in the sealed enclosure | Slow or stopped detection | Active cooler and box fan; test in direct sun (weatherproofing, after Design 1) |
 | Swivel wiring fatigue | Camera loses connection | Strain relief, cycle testing (proposal) |
 
 ### 16.3 Technical caveats
@@ -785,7 +786,7 @@ The (for approval) documents and blueprint v15 disagree on these points. Pick on
 | 9 | Node.js on the Pi | — | Node 20 (sheet 34); the app needs Node 22.13+ for its built-in SQLite |
 
 ### 16.5 Code vs the approved design
-The Increment 1 code was written before these changes. Work items for the app (`src/`):
+The Increment 1 code was written before these changes. Work items for the app (`src/`), checked against the accepted Approval Sheet, the Thesis chapter and blueprint v15 (22 Oct 2026):
 
 | Area | Code today | Approved design |
 |------|-----------|-----------------|
@@ -793,8 +794,17 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Head | One swivel axis, −170° to +170° (`src/lib/targeting.ts`) | Swivel ±90° plus tilt |
 | Scan | 72 photos: 12 pans × 3 heights × 2 angles incl. under-leaf (`src/lib/scan.ts`) | Stops over the two boxes only; see 16.4 #5 |
 | Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
+| Manual spray | Done: hold to spray, release or **Stop spray** sends `stop` (Approval Sheet test 10) | Trigger and stop a manual spray |
+| Alerts | Done: pop-up within about 2 s of a new alert (Approval Sheet test 9) | Alerts arrive within 10 s |
+| Patrol schedule | Not in the app; the simulator scans non-stop | Day / dusk / night schedule set in the app, manual "Start patrol" (section 6.8, Thesis chapter Table 1.3) |
+| Plot setup | None | Mark which stops face the planter boxes so the rest are skipped (blueprint v15, sheet 45) |
 | Battery | Not tracked | Battery level in the app and low-battery alert (INA219) |
-| Live view | None | Live camera view, scanning pauses while open *(planned)* |
+| Abnormal current | Not tracked | Flag a jammed motor or actuator from the INA219 current (Thesis chapter) |
+| Emergency stop | Not shown | Show when the hardware E-stop is pressed; the turret stays stopped until it is released (Approval Sheet test 4) |
+| Live view | None | Live camera view, scanning pauses while open *(planned, Increment 3)* |
+| Response time | Only capture and spray times are stored | Report software latency (capture, upload, detection, command) and mechanical latency (moving) separately (Approval Sheet test 11) |
+| Night patrols | Photos are not marked day or night | Mark IR photos so day and night accuracy can be compared (Approval Sheet test 7) |
+| Pest wording | "Aphid colony" | Thesis chapter Objective 1 and Definition of Terms say "aphid clusters"; the Approval Sheet and Table 1.2 say "colonies". Pick one |
 | Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.9 to the firmware |
 
 ---
@@ -842,26 +852,26 @@ The software built so far (the old "Increment 1: software without hardware") is 
 
 ## Appendix B — Testing Strategies
 
-*From the revised approval sheet. The method, expected value and pass mark for each measured line are on the test sheet, blueprint v15 sheet 19.*
+*From the accepted Approval Sheet (22 Oct 2026). The method, expected value and pass mark for each measured line are on the test sheet, blueprint v15 sheet 19. The last column says what the app gives each test today.*
 
-| # | Strategy | What is checked |
-|---|----------|-----------------|
-| 1 | Deterrent works | Pests eat noticeably less on sprayed leaves than on unsprayed leaves |
-| 2 | Deterrent is safe for the plant | Daily spray for a week: no burns, spots or wilting |
-| 3 | Parts work on their own | Each motor, switch, pump, the camera, the Pi 5 and the Pi–ESP32 link tested alone, many times |
-| 4 | The turret moves reliably | Full turns and lift cycles: no wobble, loosening or frayed wiring at the rotating joint |
-| 5 | The model actually finds pests | On the Pi 5, on unseen photos, in daylight, dim light and at night with the IR illuminator |
-| 6 | It doesn't spray things that aren't pests | Clean plants, dirt, dead leaves, helpful bugs: it stays quiet |
-| 7 | The spray lands on target | Marked targets around the full circle and at different heights: distance from target |
-| 8 | Each burst is consistent | Weigh many bursts; sizes stay close |
-| 9 | It reacts fast enough | Time from photo to spray with the model on the Pi; turret stops and never sprays if the Pi or link fails |
-| 10 | It's safe around people | Never sprays a hand or face in view; E-stop kills everything almost instantly |
-| 11 | The app is usable | Real users: every feature works, alerts arrive quickly, easy to use |
-| 12 | It has enough power | Battery alone (no solar), Pi running: how long it lasts |
-| 13 | It stays dry | Hose test: nothing inside the enclosure or rotating joint; Pi stays cool in direct sun |
-| 14 | It survives days unattended | Non-stop for days, including with no internet: no crash, no lost data |
-| 15 | It reduces damage in a real lettuce farm plot | Protected bed vs unprotected bed over a full growing cycle |
-| 16 *(proposed)* | The Wi-Fi link holds | Full patrols with the motors and pump running: % of photos that got a Pi reply and reply time; then switch the hotspot off mid-patrol. Pass: ≥ 99% replied (target, to confirm) and no spray during any dropout |
+| # | Strategy | Pass | App support |
+|---|----------|------|-------------|
+| 1 | Component (unit) testing | Each motor, servo, actuator, home switch, pump, valve, relay, camera, IR illuminator, INA219, Pi 5 and Wi-Fi link: 30 cycles, no failures | Commands log for the Pi side |
+| 2 | Mechanical functional testing | 10 full turns and lifts: smooth, back to home mark, arm-tip side play ≤ ±1.8 mm, full lift ≈ 15 s | Move / Return home on Control |
+| 3 | Fluid delivery functional testing | 20 bursts on command: 0.4 s ≈ 0.12 mL, stops when the valve closes, drip ≤ 0.8 mL in 10 s, no leaks | Spray now, Stop spray |
+| 4 | Emergency-stop (safety) testing | Motors, pump and valve stop within 1 s and stay stopped | Hardware only; E-stop status not shown yet |
+| 5 | Deterrent efficacy (lab bioassay) | ≥ 50% less feeding than plain water after 24 h | Not app |
+| 6 | Phytotoxicity (plant safety) | No burns, spots or wilting beyond the control after a week | Not app |
+| 7 | Model accuracy | Precision, recall and mAP in daylight, dim light and IR night; ≥ 80% precision and recall in daylight | Photos are not marked day or night yet |
+| 8 | Integration (model, turret, app) | Full scan, spraying off: boxes on ≥ 8 of 10 test pests, each in the detection log with an alert | Pests page and alerts; pest alerts are grouped per type for 5 min |
+| 9 | Mobile app functional testing | Logs, alerts, manual override and live view work; alerts within 10 s | Alerts pop up within about 2 s; live view not built (Increment 3) |
+| 10 | Usability testing | ≥ 5 first-time users: check status, read a log, trigger and stop a manual spray; ≥ 80% of tasks unaided, SUS ≥ 68 | Hold to spray and Stop spray |
+| 11 | Response time | Photo to spray ≤ 4 s with a 45° turn (≈ 0.9 s at the same stop) | Capture and spray times logged; no split into software and mechanical latency yet |
+| 12 | Detection distance (day and night) | Late larvae ≥ 1.15 m, aphid colonies ≥ 0.92 m, early larvae ≥ 0.46 m from the camera | Not app |
+| 13 | Link-loss (safety) | Hotspot off, then Pi unplugged: no spray, motion stops within 5 s, resumes when the link is back | App shows offline after 30 s |
+| 14 | Aim accuracy *(after Design 1)* | 10 paper targets at 1.0 m, still air and 0.5 m/s fan: within 12 mm in ≥ 9 of 10 | Not app |
+| 15 | Battery runtime *(after Design 1)* | Dusk + night schedule (17:30–23:30) on one charge: still above 11.8 V | Battery not tracked yet |
+| 16 | Leaf damage *(after Design 1)* | One planting cycle: protected group less damaged than monitoring-only and water-only groups | Auto-spray off gives the monitoring-only group |
 
 Software measures that can already be run with the simulator: response time (capture `created_at` → fire event `created_at`) and manual override reliability (command status and timestamps).
 
