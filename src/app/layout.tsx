@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { AlertPopup } from "@/components/AlertPopup";
 import { LiveChip } from "@/components/LiveChip";
 import { Logo } from "@/components/Logo";
 import { Nav } from "@/components/Nav";
@@ -45,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LiveChip />
           </header>
           <main>{children}</main>
+          <AlertPopup />
         </div>
       </body>
     </html>

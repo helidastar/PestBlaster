@@ -184,8 +184,7 @@ PestBlaster/
 │       └── pins.h       # The one pin map: GPIOs, I2C addresses, PCF8574 bits, safety numbers.
 ├── pi/                  # Raspberry Pi 5 set-up and the detection server.     (Software)
 ├── model/               # Pest dataset notes, training scripts, training log. (Software)
-├── app/                 # Where the app will move (see app/README.md).        (Software)
-├── src/                 # Increment 1 app + API (Next.js), for now at the repo root.
+├── src/                 # App + API (Next.js) at the repo root (see docs/APP.md). (Software)
 │   ├── app/             # Pages: Turret, Pests, Control, History; api/ route handlers.
 │   ├── components/      # Radar, Reservoir, Snapshot, TrendChart, Nav.
 │   └── lib/             # Fire rule, aiming, scan path, detector, SQLite store.
@@ -361,7 +360,7 @@ Work goes from a feature branch into `development` through a pull request. `main
 | [firmware/README.md](firmware/README.md) | How to run the bring-up test. |
 | [pi/README.md](pi/README.md) | Raspberry Pi 5 set-up and detection server. |
 | [model/README.md](model/README.md) | Dataset and training. |
-| [app/README.md](app/README.md) | Where the app lives and where it is going. |
+| [docs/APP.md](docs/APP.md) | Where the app lives, and why there is no top-level `app/` folder. |
 | Blueprint v15 and schematic v15 | Every part, dimension, step and formula. Kept in the team Drive (too large for git). |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>

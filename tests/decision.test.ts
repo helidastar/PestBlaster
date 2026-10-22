@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { RESERVOIR_EMPTY_PCT, decide, pickTarget, type DecisionInput } from "@/lib/decision";
 import type { Detection } from "@/lib/types";
 
-const larva: Detection = { pest: "diamondback_larva", confidence: 0.9, bbox: { x: 0.6, y: 0.5, w: 0.1, h: 0.05 } };
-const aphids: Detection = { pest: "aphid_cluster", confidence: 0.7, bbox: { x: 0.1, y: 0.1, w: 0.2, h: 0.2 } };
+const larva: Detection = { pest: "armyworm_cutworm", confidence: 0.9, bbox: { x: 0.6, y: 0.5, w: 0.1, h: 0.05 } };
+const aphids: Detection = { pest: "aphid_colony", confidence: 0.7, bbox: { x: 0.1, y: 0.1, w: 0.2, h: 0.2 } };
 const now = new Date("2026-10-01T02:00:00Z");
 
 function input(over: Partial<DecisionInput> = {}): DecisionInput {
@@ -25,12 +25,12 @@ describe("decide", () => {
     expect(d.action).toBe("fire");
     if (d.action !== "fire") return;
     expect(d.burstMs).toBe(400);
-    expect(d.target.pest).toBe("diamondback_larva");
+    expect(d.target.pest).toBe("armyworm_cutworm");
     expect(d.aim.pan).toBeGreaterThan(90);
   });
 
   it("targets the most confident pest", () => {
-    expect(pickTarget([aphids, larva])?.pest).toBe("diamondback_larva");
+    expect(pickTarget([aphids, larva])?.pest).toBe("armyworm_cutworm");
   });
 
   it.each([

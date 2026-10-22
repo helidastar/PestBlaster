@@ -254,13 +254,13 @@ Design priorities: readable outdoors on a phone, large touch targets, plain lang
 ## 6. Core Concepts
 
 ### 6.1 Pest types
-The approved design targets **loopers, armyworms/cutworms and aphid clusters**. The Increment 1 code still uses the older list below; changing it is a code task (section 16.5).
+The approved design targets **loopers, armyworms/cutworms and aphid colonies**. The codes match the YOLO11n class names; old codes (`diamondback_larva`, `aphid_cluster`) are renamed automatically when an older database opens.
 
-| Code (Increment 1) | Name | Scientific name | Notes for the model |
+| Code | Name | Scientific name | Notes for the model |
 |------|------|-----------------|---------------------|
-| `diamondback_larva` | Diamondback moth larva | *Plutella xylostella* | **Dropped from the target list.** Replace with an armyworm/cutworm class (*Spodoptera* spp. / *Agrotis* spp.) |
 | `looper` | Looper | *Trichoplusia ni* | Green, arches its body; blends into the leaf (hardest class) |
-| `aphid_cluster` | Aphid cluster | Aphididae | Groups of tiny insects; single aphids are too small to see from the turret (blueprint v15), so the model targets clusters |
+| `armyworm_cutworm` | Armyworm / cutworm | *Spodoptera litura*, *Agrotis* spp. | Smooth, dark side stripes; feeds at dusk and night |
+| `aphid_colony` | Aphid colony | Aphididae | Groups of tiny insects; single aphids are too small to see from the turret (blueprint v15), so the model targets clusters |
 
 ### 6.2 Turret pose (the coordinate system)
 | Axis | Range | Meaning |
@@ -433,9 +433,9 @@ Serverless hosts (e.g. Vercel) are **not** suitable while the database is a loca
 | `--leaf` | `#3d6b2a` | `#8fc46a` | Primary actions, "on" states |
 | `--spray` | `#1a7488` | `#4fb3c6` | Anything to do with spraying / deterrent |
 | `--danger` | `#b42318` | `#f07a6a` | Offline, refill needed |
-| `--pest-dbm` | `#b07a12` | `#b8862a` | Diamondback moth larva |
+| `--pest-army` | `#b07a12` | `#b8862a` | Armyworm / cutworm |
 | `--pest-looper` | `#7b4fb8` | `#9474dc` | Looper |
-| `--pest-aphid` | `#c8406e` | `#db5f87` | Aphid cluster |
+| `--pest-aphid` | `#c8406e` | `#db5f87` | Aphid colony |
 
 The three pest colors were checked with a colorblind-safety validator in both light and dark mode. Each pest also has its own **shape** (larva ●, looper ■, aphids ▲), so identity never depends on color alone.
 
@@ -514,7 +514,7 @@ erDiagram
         int id PK
         text device_id FK
         text created_at
-        text type "fire | move | home | set_mode"
+        text type "fire | stop | move | home | set_mode"
         text payload "JSON"
         text status "pending | sent | done | failed"
         text done_at
@@ -567,7 +567,7 @@ Firmware loop *(planned)*: heartbeat → run any commands → move to next scan 
 | GET | `/api/stats?days=7` | Pests per type and sprays per day |
 | GET / POST | `/api/alerts` | List alerts / mark all as read |
 | PATCH | `/api/settings` | Change `autoFire`, `mode`, `confidenceThreshold`, `burstMs`, `cooldownS`, `reservoirLowPct` |
-| GET / POST | `/api/commands` | List / queue `{type: "fire", durationMs}`, `{type: "move", pose}`, `{type: "home"}` |
+| GET / POST | `/api/commands` | List / queue `{type: "fire", durationMs}`, `{type: "stop"}`, `{type: "move", pose}`, `{type: "home"}`. Hold to spray sends `fire` with 3000 ms (the pump cap) and `stop` on release; while a manual spray runs, the turret keeps checking in (about every 250 ms) so a `stop` ends it early. A `stop` also cancels any `fire` the turret has not picked up yet. |
 | GET | `/api/snapshots/{file}` | A stored photo |
 
 ### 10.3 Example capture response
@@ -577,12 +577,12 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 {
   "captureId": 128,
   "detections": [
-    { "pest": "diamondback_larva", "confidence": 0.86,
+    { "pest": "armyworm_cutworm", "confidence": 0.86,
       "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } }
   ],
   "decision": {
     "action": "fire",
-    "target": { "pest": "diamondback_larva", "confidence": 0.86, "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } },
+    "target": { "pest": "armyworm_cutworm", "confidence": 0.86, "bbox": { "x": 0.61, "y": 0.42, "w": 0.09, "h": 0.05 } },
     "aim": { "pan": 101.8, "lift": 150, "swivel": 56.9 },
     "burstMs": 400
   }
@@ -789,7 +789,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 
 | Area | Code today | Approved design |
 |------|-----------|-----------------|
-| Pest classes | `diamondback_larva`, `looper`, `aphid_cluster` (`src/lib/pests.ts`, colors, tests) | loopers, armyworms/cutworms, aphid clusters |
+| Pest classes | Done: `looper`, `armyworm_cutworm`, `aphid_colony` (`src/lib/pests.ts`) | loopers, armyworms/cutworms, aphid colonies |
 | Head | One swivel axis, −170° to +170° (`src/lib/targeting.ts`) | Swivel ±90° plus tilt |
 | Scan | 72 photos: 12 pans × 3 heights × 2 angles incl. under-leaf (`src/lib/scan.ts`) | Stops over the two boxes only; see 16.4 #5 |
 | Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |

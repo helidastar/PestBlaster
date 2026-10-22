@@ -28,6 +28,8 @@ const PEST_RATE = Number(opt("pest-rate", "0.3"));
 /** Deterrent used per second of spraying, in percent of a full 2.5 L reservoir (R385 pump ≈ 2 L/min). */
 const PCT_PER_SPRAY_SECOND = 1.3;
 const HOME: Pose = { pan: 0, lift: 300, swivel: 60 };
+/** How often the turret checks for a "stop" while a manual spray runs. */
+const STOP_POLL_MS = 250;
 
 let pose: Pose = { ...HOME };
 let reservoir = Number(opt("reservoir", "100"));
@@ -60,10 +62,10 @@ function randomPests(p: Pose): Detection[] {
   for (let i = 0; i < count; i++) {
     // Aphids gather under leaves; larvae and loopers are more often on top.
     const pest: PestType = underside
-      ? Math.random() < 0.6 ? "aphid_cluster" : PEST_TYPES[Math.floor(Math.random() * 2)]
+      ? Math.random() < 0.6 ? "aphid_colony" : PEST_TYPES[Math.floor(Math.random() * 2)]
       : PEST_TYPES[Math.floor(Math.random() * 3)];
-    const size = { diamondback_larva: [0.09, 0.05], looper: [0.13, 0.07], aphid_cluster: [0.15, 0.12] }[pest];
-    const base = { diamondback_larva: 0.84, looper: 0.7, aphid_cluster: 0.82 }[pest];
+    const size = { armyworm_cutworm: [0.12, 0.05], looper: [0.13, 0.07], aphid_colony: [0.15, 0.12] }[pest];
+    const base = { armyworm_cutworm: 0.84, looper: 0.7, aphid_colony: 0.82 }[pest];
     out.push({
       pest,
       confidence: base - (underside ? 0.08 : 0),
@@ -82,11 +84,12 @@ function drawPest(d: Detection): string {
   const W = 640, H = 480;
   const x = d.bbox.x * W, y = d.bbox.y * H, w = d.bbox.w * W, h = d.bbox.h * H;
   const cx = x + w / 2, cy = y + h / 2;
-  if (d.pest === "diamondback_larva") {
+  if (d.pest === "armyworm_cutworm") {
     const segs = Array.from({ length: 5 }, (_, i) =>
-      `<ellipse cx="${x + (i + 0.5) * (w / 5)}" cy="${cy}" rx="${w / 9}" ry="${h / 2.4}" fill="#b9d98a" stroke="#7fa35a" stroke-width="1"/>`,
+      `<ellipse cx="${x + (i + 0.5) * (w / 5)}" cy="${cy}" rx="${w / 9}" ry="${h / 2.4}" fill="#8c7a4e" stroke="#4d4026" stroke-width="1"/>`,
     ).join("");
-    return `<g>${segs}<circle cx="${x + w - 3}" cy="${cy}" r="${h / 4}" fill="#6b5a3a"/></g>`;
+    const stripe = `<line x1="${x + 2}" y1="${cy + h / 5}" x2="${x + w - 4}" y2="${cy + h / 5}" stroke="#2f2716" stroke-width="1.5"/>`;
+    return `<g>${segs}${stripe}<circle cx="${x + w - 3}" cy="${cy}" r="${h / 4}" fill="#3a2f1c"/></g>`;
   }
   if (d.pest === "looper") {
     return `<path d="M ${x} ${y + h} Q ${cx} ${y - h * 0.6} ${x + w} ${y + h}" fill="none" stroke="#8fc56a" stroke-width="${h / 2.2}" stroke-linecap="round"/>
@@ -120,13 +123,21 @@ function renderLeaf(p: Pose, pests: Detection[]): string {
 
 // ---------- turret actions ----------
 
-async function heartbeat(): Promise<void> {
+/** Commands that arrived while a manual spray was running; run after it ends. */
+const queued: Command[] = [];
+
+async function checkIn(): Promise<Command[]> {
   const res = await postJson<{ mode: string; settings: DeviceSettings; commands: Command[] }>(
     "/api/device/heartbeat",
-    { pose, reservoirPct: round1(reservoir), firmware: "simulator-0.1" },
+    { pose, reservoirPct: round1(reservoir), firmware: "simulator-0.2" },
   );
   settings = res.settings;
-  for (const cmd of res.commands) await runCommand(cmd);
+  return res.commands;
+}
+
+async function heartbeat(): Promise<void> {
+  const cmds = [...queued.splice(0), ...(await checkIn())];
+  for (const cmd of cmds) await runCommand(cmd);
 }
 
 async function spray(durationMs: number, source: "auto" | "manual", captureId: number | null) {
@@ -134,10 +145,29 @@ async function spray(durationMs: number, source: "auto" | "manual", captureId: n
     log("  ✗ reservoir empty, cannot spray");
     return false;
   }
-  log(`  💧 spraying ${durationMs} ms (${source}) at ${fmtPose(pose)}`);
-  await sleep(durationMs);
-  reservoir = Math.max(0, reservoir - (durationMs / 1000) * PCT_PER_SPRAY_SECOND);
-  await postJson("/api/device/fires", { source, durationMs, pose, captureId });
+  log(`  💧 spraying up to ${durationMs} ms (${source}) at ${fmtPose(pose)}`);
+  const start = Date.now();
+  if (source === "manual") {
+    // A manual spray lasts while the button is held: keep checking in so a "stop" ends it early.
+    let stopCmd: Command | null = null;
+    while (!stopCmd && Date.now() - start < durationMs) {
+      await sleep(Math.min(STOP_POLL_MS, durationMs - (Date.now() - start)));
+      for (const cmd of await checkIn()) {
+        if (cmd.type === "stop" && !stopCmd) stopCmd = cmd;
+        else queued.push(cmd);
+      }
+    }
+    if (stopCmd) {
+      log(`→ manual command #${stopCmd.id}: stop`);
+      await postJson(`/api/device/commands/${stopCmd.id}`, { ok: true });
+    }
+  } else {
+    await sleep(durationMs);
+  }
+  const sprayed = Math.min(durationMs, Date.now() - start);
+  reservoir = Math.max(0, reservoir - (sprayed / 1000) * PCT_PER_SPRAY_SECOND);
+  log(`  💧 sprayed ${sprayed} ms`);
+  await postJson("/api/device/fires", { source, durationMs: sprayed, pose, captureId });
   return true;
 }
 
@@ -147,6 +177,7 @@ async function runCommand(cmd: Command) {
   if (cmd.type === "fire") ok = await spray(Number(cmd.payload.durationMs ?? 400), "manual", null);
   else if (cmd.type === "move") pose = cmd.payload.pose as Pose;
   else if (cmd.type === "home") pose = { ...HOME };
+  // "stop" with no spray running has nothing to stop.
   await postJson(`/api/device/commands/${cmd.id}`, { ok });
 }
 
