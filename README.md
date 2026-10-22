@@ -231,12 +231,12 @@ The order follows blueprint v15 and the Thesis 1 schedule. Each step needs the o
 ## Collaborator Quickstart
 
 1. Ask Charity ([@helidastar](https://github.com/helidastar)) to add you as a collaborator on this repo.
-2. Clone and switch to `development`:
+2. Clone and switch to `dev`:
 
    ```bash
    git clone https://github.com/helidastar/PestBlaster.git
    cd PestBlaster
-   git checkout development
+   git checkout dev
    npm install
    ```
 
@@ -334,20 +334,21 @@ See the [open issues](https://github.com/helidastar/PestBlaster/issues) for more
 
 ## Contributing
 
-Work goes from a feature branch into `development` through a pull request. `main` only gets `development` when the project is finished.
+Work goes from a feature branch into `dev` through a pull request. `main` only gets `dev` when the project is finished.
 
-1. Branch from `development` (`git checkout -b feat/<area>`, for example `feat/firmware`, `feat/model`)
+1. Work on the existing branch for your area: `feat/ui` (app) or `feat/AI` (model). Ask the team before making a new one
 2. Commit with a one-line message in the form `type(area): what changed` (e.g. `feat(firmware): turn the stepper 360 degrees both ways`). Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 3. Check your work (`npm test` and `npm run typecheck` for the app; compile in the Arduino IDE for firmware)
 4. Push the branch (`git push -u origin feat/<area>`)
-5. Open a pull request into `development`. One other team member reviews it before it is merged.
+5. Open a pull request into `dev`. One other team member reviews it before it is merged.
 
 | Branch / tag | What it is |
 |---|---|
-| `development` | Working branch. Every feature is merged here. **Start here.** |
-| `feat/<area>` | One feature in progress |
+| `dev` | Working branch. Every feature is merged here. **Start here.** |
+| `feat/ui` | The app |
+| `feat/AI` | Pest detection model: dataset, training, model server |
 | `main` | Finished, stable version. Protected: pull request, code owner review and the `main guard` check |
-| `increment-N` | Tag: snapshot of `development` at increment N's checking |
+| `increment-N` | Tag: snapshot of `dev` at increment N's checking |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
