@@ -1,6 +1,6 @@
 # PestBlaster — Project Documentation
 
-> **Status:** v0.2 (16 Oct 2026). Increment 1 (software) implemented and tested on the `development` branch. Hardware build started for the 25% check (Oct 30).
+> **Status:** v0.2 (16 Oct 2026). Increment 1 (software) implemented and tested on the `dev` branch. Hardware build started for the 25% check (Oct 30).
 > **Sources:** the design is taken from the *(for approval)* Main, Hardware & Software Specifications and Function/Features List documents (October 2026) and blueprint v15 (52 sheets, 11 Oct 2026). Where those two disagree, both are given and the item is listed in [section 16.4](#164-open-items-approval-documents-vs-blueprint-v15).
 > Anything marked *(planned)* is not built yet. Sections 5, 8–10 and 12–15 describe the Increment 1 code as it is today; [section 16.5](#165-code-vs-the-approved-design) lists where that code still differs from the approved design.
 > Diagrams are written in [Mermaid](https://mermaid.js.org/) and render directly on GitHub.
@@ -65,30 +65,29 @@
 | Branch | Purpose | Status |
 |--------|---------|--------|
 | `main` | Finished, stable software. Only updated when development is done and the project is in maintenance. | Exists |
-| `development` | Working branch. Every feature is merged here and every increment is checked from here. | Exists |
-| `feat/increment-1` | Increment 1 software and this documentation (merged into `development`) | Merged |
-| `feat/firmware` *(suggested)* | ESP32-S3 firmware in `firmware/` | Suggested |
-| `feat/model` | Dataset scripts, training notebooks and the model server (pull request #3) | Open |
+| `dev` | Working branch (renamed from `development`, 22 Oct 2026). Every feature is merged here and every increment is checked from here. | Exists |
+| `feat/ui` | The app (`src/`, `scripts/`, `tests/`) | Exists |
+| `feat/AI` | Dataset scripts, training notebook and the model server in `training/` (renamed from `feat/model`, pull request #3) | Exists |
 
 | Tag | Points to |
 |-----|-----------|
-| `increment-1` | `development` as checked at Increment 1 *(create after the check)* |
+| `increment-1` | `dev` as checked at Increment 1 *(create after the check)* |
 
 **Branch naming:** `feat/<area>` for features, `fix/<area>` for fixes.
 
 **Commit messages:** one line, `type(area): what changed`, for example `feat(ui): add spray history tab`. Types: `feat`, `fix`, `docs`, `test`, `chore`, `refactor`.
 
-**Branch flow:** `feat/<area>` → `development` (pull request, squash and merge) → `main` (only when development is done).
+**Branch flow:** `feat/<area>` → `dev` (pull request) → `main` (only when development is done). New branches only when the team agrees; use the existing ones above.
 
 **After each increment check:** tag what was checked so it can always be restored.
 
 ```bash
 git fetch origin
-git tag -a increment-N origin/development -m "increment N checked"
+git tag -a increment-N origin/dev -m "increment N checked"
 git push origin increment-N
 ```
 
-To look at a checked version: `git checkout increment-1`. To restore it: `git checkout -b fix/restore increment-1`, then open a pull request into `development`.
+To look at a checked version: `git checkout increment-1`. To restore it: `git checkout -b fix/restore increment-1`, then open a pull request into `dev`.
 
 ### Contributors
 | Name | GitHub |
@@ -829,7 +828,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 3. The simulator and the firmware use the same API. If you change the API, change both.
 4. Same pest colors and shapes everywhere.
 5. Run `npm test` and `npm run typecheck` before pushing.
-6. Work on a `feat/<area>` branch → pull request into `development`. Never commit directly to `development` or `main`.
+6. Work on a `feat/<area>` branch → pull request into `dev`. Never commit directly to `dev` or `main`.
 
 ---
 
