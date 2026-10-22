@@ -1,7 +1,8 @@
 # PestBlaster — Project Documentation
 
-> **Status:** v0.1 — Increment 1 (software) implemented and tested on the `development` branch. Hardware not yet built.
-> Anything marked *(planned)* describes the intended design from the *PestBlaster Project Design Proposal* (CpE, Cebu Institute of Technology – University, September 2026) and is not built yet.
+> **Status:** v0.2 (16 Oct 2026). Increment 1 (software) implemented and tested on the `development` branch. Hardware build started for the 25% check (Oct 30).
+> **Sources:** the design is taken from the *(for approval)* Main, Hardware & Software Specifications and Function/Features List documents (October 2026) and blueprint v15 (52 sheets, 11 Oct 2026). Where those two disagree, both are given and the item is listed in [section 16.4](#164-open-items-approval-documents-vs-blueprint-v15).
+> Anything marked *(planned)* is not built yet. Sections 5, 8–10 and 12–15 describe the Increment 1 code as it is today; [section 16.5](#165-code-vs-the-approved-design) lists where that code still differs from the approved design.
 > Diagrams are written in [Mermaid](https://mermaid.js.org/) and render directly on GitHub.
 
 ## Table of Contents
@@ -34,19 +35,20 @@
 | Field | Value |
 |-------|-------|
 | **Project** | PestBlaster: Design and Development of an Autonomous Rotating Turret System for Detection and Organic Deterrence of Leaf-Feeding Pests in Lettuce Crops |
-| **Type** | Embedded turret (ESP32-S3) + backend server + mobile-first grower app |
-| **Status** | Increment 1 (software) built and tested; hardware and trained model pending |
+| **Type** | Embedded turret (ESP32-S3 CAM) + on-board AI computer (Raspberry Pi 5) + mobile-first app |
+| **Status** | Increment 1 (software) built and tested; hardware build started; model not trained yet |
 | **Degree / Course** | BS Computer Engineering, Project Design (CpE 481) |
 | **School** | Cebu Institute of Technology – University |
 | **Adviser** | Engr. Nikko D. Alferez |
-| **Primary users** | Growers in school and community lettuce gardens |
-| **Target pests** | Armyworm / cutworme, loopers, aphid clusters |
+| **Primary users** | Small-scale lettuce farm owners. The prototype is tested on two raised planter boxes. |
+| **Target pests** | Loopers, armyworms/cutworms, aphid clusters |
 | **Frontend + API** | Next.js 15 (App Router), React 19, TypeScript |
 | **Database** | SQLite (built into Node.js 22) — file in `data/` |
-| **Pest detection** | Pluggable: simulated stand-in (Increment 1) → trained model served over HTTP *(planned, Increment 2)* |
-| **Turret controller** | ESP32-S3 with OV5640 camera *(planned)*; a software simulator plays its part today |
-| **Architecture style** | Modular monolith server + thin device client |
-| **Key flow** | Turret scans → sends photo → server detects pest → server decides fire or hold and where to aim → turret aims and sprays → app shows it all |
+| **Pest detection** | YOLO11n with OpenCV preprocessing on the Raspberry Pi 5, served by FastAPI + Ultralytics *(planned, Increment 2)*; a simulated detector stands in today |
+| **Turret controller** | ESP32-S3 CAM (N16R8) with OV5640 camera *(planned)*; a software simulator plays its part today |
+| **ESP32 ↔ Pi link** | Wi-Fi through the Pi 5's own hotspot (blueprint v15, sheet 34); no internet or router needed. Decided 16 Oct 2026; the approval documents still say USB until they are edited (section 16.4) |
+| **Architecture style** | Modular monolith on the Pi (Next.js app + API, SQLite, model server) + thin device client (ESP32) |
+| **Key flow** | Turret scans → sends photo to the Pi → Pi detects pest → Pi decides fire or hold and where to aim → turret aims and sprays → app shows it all |
 
 ---
 
@@ -65,8 +67,8 @@
 | `main` | Finished, stable software. Only updated when development is done and the project is in maintenance. | Exists |
 | `development` | Working branch. Every feature is merged here and every increment is checked from here. | Exists |
 | `feat/increment-1` | Increment 1 software and this documentation (merged into `development`) | Merged |
-| `feat/firmware` *(suggested)* | ESP32-S3 firmware (Increment 2–3) | Suggested |
-| `feat/model` *(suggested)* | Dataset scripts, training notebooks and the model server (Increment 2) | Suggested |
+| `feat/firmware` *(suggested)* | ESP32-S3 firmware in `firmware/` | Suggested |
+| `feat/model` | Dataset scripts, training notebooks and the model server (pull request #3) | Open |
 
 | Tag | Points to |
 |-----|-----------|
@@ -91,7 +93,7 @@ To look at a checked version: `git checkout increment-1`. To restore it: `git ch
 ### Contributors
 | Name | GitHub |
 |------|--------|
-| Adriyanna G. Diana | — |
+| Adriyanna G. Diana | [@adiii568](https://github.com/adiii568) |
 | Maria Mhikyla L. Jayno | [@mhiksNmatch](https://github.com/mhiksNmatch) |
 | Charity T. Ricabo | [@helidastar](https://github.com/helidastar) |
 
@@ -103,34 +105,38 @@ To look at a checked version: `git checkout increment-1`. To restore it: `git ch
 | 2026-09-19 | Title defense. Panel asked for: lettuce/leafy crops instead of round cabbage, full 360° turret rotation, automatic up–down movement. |
 | 2026-09-24 | Approval sheet submitted |
 | 2026-09-26 | Increment 1 software (backend, app, simulator) pushed |
+| 2026-10 | Design moved to an on-board Raspberry Pi 5; target pests and users revised; (for approval) documents and revised approval sheet prepared |
+| 2026-10-11 | Blueprint v15 (52 sheets) and electronics schematic v15 |
+| 2026-10-30 | 25% check: base rotation and lift *(scheduled)* |
+| 2026-11-03 to 11-13 | 50% build: spray line, arm and head, trained model, prototype app *(scheduled)* |
+| 2026-11-23 to 11-27 | Panel defense *(scheduled)* |
 
 ---
 
 ## 3. Overview
 
 ### 3.1 Problem statement
-Lettuce is a common vegetable crop in Cebu, but it is highly vulnerable to leaf-feeding pests such as loopers, armyworms/cutworms and aphids. They feed directly on the leaves and, left unchecked, cause skeletonized leaves, stunted growth and significant yield loss. Existing smart garden systems only **monitor and alert** — they take no physical action. In gardens without constant supervision, larvae keep feeding in the time between an alert and someone responding. There is no low-cost, autonomous system that detects these pests on lettuce and **immediately responds with a physical deterrent**.
+Lettuce is grown on small-scale farms, but it is vulnerable to leaf-feeding pests. Caterpillars such as loopers, armyworms and cutworms eat the leaf tissue, and aphids suck plant sap, discolor and distort the leaves, and transmit viral diseases. Left unchecked, these pests cause holes and skeletonized leaves, stunted growth and yield loss. Existing smart garden systems only **monitor and alert**; they take no physical action. On farms without constant supervision, pests can cause serious leaf damage in the time between an alert and someone responding. There is no low-cost, autonomous system that detects these pests on lettuce and **immediately responds with a physical deterrent**, without waiting for a person to act.
 
 ### 3.2 Goals
 **General objective:** design and develop PestBlaster, an autonomous pest detection and deterrence turret that protects lettuce crops by detecting leaf-feeding pests and immediately dispersing an organic deterrent.
 
-**Specific objectives**
-1. A machine vision pipeline that detects and classifies loopers, armyworms/cutworms and aphid colonies.
-2. A stepper-driven 360° rotating turret with a telescoping post and a hanging swivel camera mount that can aim anywhere on the plant, including leaf undersides, from the top down to soil level.
-3. A valve/pump control system that releases timed organic deterrent bursts once a pest is confirmed.
-4. A companion mobile app to monitor pest activity, view detection logs and manage the system remotely.
-5. An evaluation of detection accuracy, response time and reduction in leaf damage against a monitoring-only baseline.
+**Specific objectives** (from the (for approval) Main document)
+1. To design a machine vision pipeline, running on an on-board Raspberry Pi 5, that detects and classifies common lettuce leaf pests (loopers, armyworms/cutworms, and aphid clusters) using a YOLO11n model with OpenCV image processing.
+2. To develop a rotating turret mechanism with 360° rotation and a vertical scanning axis, controlled by an ESP32-S3 microcontroller, that can aim at a detected pest anywhere on the lettuce plant, from the top leaves down to soil level.
+3. To implement a valve/pump control system that releases timed organic deterrent bursts only after the Raspberry Pi confirms a pest target.
+4. To build a companion mobile app that lets farm owners monitor pest activity, view detection logs, and manage the system remotely.
+5. To evaluate detection accuracy, response time, and reduction in leaf damage compared to a passive monitoring-only baseline.
 
 ### 3.3 Success looks like
 - A pest is sprayed **within seconds** of being photographed, with no one present.
-- A grower opens the app and can tell at a glance: is the turret online, where is it looking, what did it find, did it spray, is the bottle running low.
-- The grower can **stop or take over** the turret at any time (harvesting, refilling, maintenance).
+- A farm owner opens the app and can tell at a glance: is the turret online, where is it looking, what did it find, did it spray, is the bottle running low.
+- The farm owner can **stop or take over** the turret at any time (harvesting, refilling, maintenance).
 
 ### 3.4 Stakeholders
 | Stakeholder | Interest / role | What they need from the system |
 |-------------|-----------------|--------------------------------|
-| School garden teachers and students | Grow lettuce with less supervision | Less chemical exposure, fewer hours watching the bed |
-| Community garden growers | Protect a small plot cheaply | Low cost, no special pest knowledge needed |
+| Small-scale lettuce farm owners and workers | Protect the crop with less supervision | Low cost, less chemical exposure, no special pest knowledge needed |
 | Development team | Build and test the system | Clear increments, testable software before hardware exists |
 | Adviser and panel | Evaluate the project | Working increments, measured accuracy and response time |
 
@@ -146,16 +152,30 @@ Lettuce is a common vegetable crop in Cebu, but it is highly vulnerable to leaf-
 | 7 | Data logging | Built (every capture, detection, spray, command) | SQLite, History → Trends |
 
 ### 3.6 Scope & limitations
-**Scope:** lettuce in small to medium plots (school and community gardens); three target pests; organic, non-toxic botanical spray; one raised bed or row per turret; the app covers monitoring, alerts and manual override (no marketplace or yield prediction).
+**Scope** (from the (for approval) Main document):
+- Designed for small-scale lettuce farm owners. The prototype is tested on two raised planter boxes.
+- The turret stands on the ground between two raised planter boxes, each about 40 cm high (soil surface) and 30 cm wide, with one row of lettuce per box (design estimates).
+- Target pests: loopers, armyworms/cutworms, and aphids.
+- Organic, non-toxic botanical spray, safe for edible crops when used as directed.
+- A fixed detection and spray radius set by the 0.5 m arm.
+- The app covers monitoring, alerts and manual override (no marketplace or yield prediction).
 
-**Limitations (from the proposal):**
-- The deterrent repels, it does not kill; it is not a substitute for full integrated pest management.
-- Accuracy may drop for small green pests like loopers that blend into the leaf, under overlapping leaves, in poor light, rain or wind.
-- Two coordinated rotating mechanisms (pan base + swivel mount) add control complexity; the swivel wiring is subject to flex fatigue.
-- The 0.5 m arm may sway in wind, affecting fine aim.
-- The telescoping post has 30 cm of travel, which may not cover taller plants.
-- IR/thermal night detection is a stretch feature.
-- Not rated for extreme weather. The reservoir needs manual refilling.
+**Limitations:**
+- The deterrent only repels pests; it does not kill them and is not a substitute for full integrated pest management.
+- Accuracy may drop for small, green-bodied pests such as loopers, when leaves overlap and hide the pest, and in poor light, rain or wind.
+- The whole assembly rotates on a turntable; play in the lazy susan bearing appears as wobble at the arm tip.
+- The belt and bearing sit in a gap under the turntable; a splash skirt covers it, but soil and water can still reach it over time.
+- The hanging swivel mount turns ±90°; its hose and cable flex with every sweep and need strain relief and cycle testing.
+- The 0.5 m arm, balanced by a counter-arm and stiffened with a steel rod, may still sway in wind, which affects fine targeting.
+- The lift has a fixed 30 cm travel and moves slowly; taller plants or other bed heights may not be fully covered.
+- The head reaches only about 20 cm past the planter box wall, so the system suits narrow boxes only.
+- A fine mist drifts in wind, and botanical sprays may clog the nozzle; a strainer and a plain-water flush are needed.
+- Detection runs on the on-board Raspberry Pi 5, so it works without internet. The ESP32-S3 never sprays on its own; if the Pi or the link fails, it stops all motion and waits.
+- One camera head; a second head on the counter-arm is future work.
+- Night detection uses the IR illuminator; night accuracy may be lower than in daylight.
+- Not rated for extreme weather. The reservoir needs periodic manual refilling.
+
+**Project limits for the thesis claims** (project brief and blueprint v15): pests on exposed leaf surfaces and fresh damage only; early-instar larvae only out to 0.90 m; aim valid in wind up to 0.5 m/s; one battery charge covers one evening schedule. One of these differs from the approval documents (leaf undersides); see section 16.4.
 
 ---
 
@@ -166,15 +186,15 @@ Lettuce is a common vegetable crop in Cebu, but it is highly vulnerable to leaf-
 ```mermaid
 flowchart TD
     A[Turret moves to next scan stop<br/>pan · lift · swivel] --> B[Camera takes a photo]
-    B --> C[ESP32 sends photo + pose to server]
+    B --> C[ESP32 sends photo + pose to the Raspberry Pi 5]
     C --> D[Detector finds pests<br/>type · confidence · box]
     D --> E{Fire rule}
     E -- hold --> F[Log capture + reason]
     F --> A
-    E -- fire --> G[Server computes aim<br/>from box position]
+    E -- fire --> G[Pi computes aim<br/>from box position]
     G --> H[Turret aims at pest]
     H --> I[Pump + valve burst]
-    I --> J[Turret confirms spray to server]
+    I --> J[Turret confirms spray to the Pi]
     J --> K[Alert + log · app updates]
     K --> A
 ```
@@ -212,6 +232,8 @@ stateDiagram-v2
 
 The app shows these as **Waiting for turret → Turret is doing it → Done / Turret could not do it**.
 
+In the approved design, the turret first **homes** (turns until the home switch meets the home tab, setting 0°) and corrects its position each time it passes home. The lift is raised before the base rotates so the head clears the planter box walls.
+
 ---
 
 ## 5. User Interface & Features Breakdown
@@ -232,26 +254,30 @@ Design priorities: readable outdoors on a phone, large touch targets, plain lang
 ## 6. Core Concepts
 
 ### 6.1 Pest types
+The approved design targets **loopers, armyworms/cutworms and aphid colonies**. The codes match the YOLO11n class names; old codes (`diamondback_larva`, `aphid_cluster`) are renamed automatically when an older database opens.
+
 | Code | Name | Scientific name | Notes for the model |
 |------|------|-----------------|---------------------|
-| `armyworm_cutworm` | Armyworm / cutworm | *Spodoptera litura*, *Agrotis* spp. | Smooth, dark side stripes; feeds at dusk and night |
 | `looper` | Looper | *Trichoplusia ni* | Green, arches its body; blends into the leaf (hardest class) |
-| `aphid_colony` | Aphid colony | Aphididae | Groups of tiny insects, mostly on leaf undersides |
+| `armyworm_cutworm` | Armyworm / cutworm | *Spodoptera litura*, *Agrotis* spp. | Smooth, dark side stripes; feeds at dusk and night |
+| `aphid_colony` | Aphid colony | Aphididae | Groups of tiny insects; single aphids are too small to see from the turret (blueprint v15), so the model targets clusters |
 
 ### 6.2 Turret pose (the coordinate system)
 | Axis | Range | Meaning |
 |------|-------|---------|
 | **Pan** | 0–360° | Base rotation, 0° = reference direction, clockwise |
 | **Lift** | 0–300 mm | Telescoping post travel. 0 = lowest (soil level), 300 = highest |
-| **Swivel** | −170° to +170° | Camera + nozzle angle. 0° = level, 90° = straight down, above 90° = swung back to look under the leaf |
+| **Swivel** | −170° to +170° | Camera + nozzle angle. 0° = level, 90° = straight down, above 90° = swung back to look under the leaf. **Approved design: swivel ±90° plus a separate tilt servo** (section 16.5) |
 
 The nozzle is mounted beside the camera, so aiming the camera at a pest also aims the spray.
 
 ### 6.3 Scan path
 One sweep = 12 pan stops (every 30°) × 3 heights (300, 150, 0 mm) × 2 camera angles (60° leaf top, 130° under leaf) = **72 photos**. The lift direction alternates between pan stops (top→soil, then soil→top) so the post never makes an empty return trip. Defined in `src/lib/scan.ts`.
 
+Approved design: scan at set stops over the two planter boxes only, at three heights (top, middle, soil level). Blueprint v15 instead patrols 12 stops 30° apart with the lift down and 4 frames per stop (swivel ±30° × tilt 35°/75°). See section 16.4.
+
 ### 6.4 Aiming
-The detector returns a box in image coordinates (0–1). The server converts the box center into angle corrections using the camera's field of view (OV5640 ≈ 68° × 52°, pinhole model):
+The detector returns a box in image coordinates (0–1). The server converts the box center into angle corrections using the camera's field of view (OV5640 ≈ 68° × 52°, pinhole model). Blueprint v15 uses 60.3° × 47.1° (datasheet estimate, sheet 18); measure the real lens before the aim calibration:
 
 - Box right of center → **pan** right; box below center → **swivel** down.
 - If the swivel would pass ±170°, the remaining angle is covered by moving the **lift** instead (using the ~150 mm working distance).
@@ -275,24 +301,61 @@ The detector returns a box in image coordinates (0–1). The server converts the
 ### 6.7 Online / offline
 The turret checks in every few seconds. If the server has not heard from it for **30 seconds**, the app shows it as offline. Commands sent while offline wait until it reconnects.
 
+### 6.8 Patrol schedule
+The turret does not watch the plants all the time. It runs short patrols on a schedule set in the app, and stays parked between them to save battery (Function list: Patrol Schedule; blueprint v15, sheet 43).
+
+| Window | Time | Every | Notes |
+|--------|------|-------|-------|
+| Day | 07:00–16:00 | 60 min | |
+| Dusk | 17:30–19:30 | 15 min | IR illuminator on as the light fades |
+| Night | 19:30–23:30 | 30 min | Uses the IR illuminator (850 nm LED ring) |
+| Manual | any time | — | "Start patrol" in the app |
+
+**One patrol, step by step** (blueprint v15, sheets 20 and 34). The camera is the only pest sensor, and it takes still photos, not video.
+
+1. The turret homes itself so it knows where 0° is.
+2. It turns to a stop (12 stops, 30° apart; stops facing the walkway are skipped), waits for the arm to settle, and takes 4 photos: swivel left and right, each at two tilt angles.
+3. Each photo (640 × 480 JPEG) goes over Wi-Fi to the Raspberry Pi. YOLO11n checks it in about 0.1 s and returns a box, pest type and confidence for anything that looks like a looper, armyworm/cutworm or aphid cluster.
+4. No pest: go on to the next photo or stop. Pest: the Pi turns the box position into angles, the turret aims, takes one more photo to confirm, and if the pest is still there it sprays a 0.4 s burst (pump on, then valve).
+5. After the last stop the patrol ends and the turret parks until the next one.
+
+One patrol (all active stops, 4 photos per stop) takes about 1 minute (≈ 57 s full ring, ≈ 32 s two beds; blueprint estimate, measured on test sheet 19). The live camera view is separate: it is for a person to watch, is not used for detection, and pauses the patrol while open.
+
+The battery claim "one charge covers one evening schedule" covers dusk + night (≈ 2.85 Ah of a 7 Ah SLA, blueprint sheet 43). Day patrols add to that, so the full day + dusk + night use should be measured on the battery test.
+
+**Why not patrol 24 hours:** non-stop patrolling would empty the 7 Ah battery in about 3.5 h. On the schedule the turret is parked most of the time, so one charge covers the evening (dusk and night), when caterpillars come out to feed.
+
+### 6.9 If the Wi-Fi link drops
+The ESP32 and the Pi talk over the Pi's own hotspot, about 1 m apart on the same turntable. There is no second (wired) link: a dropout fails safe instead.
+
+| Step | What happens | Source |
+|------|--------------|--------|
+| 1 | No reply from the Pi within 5 s → no spray: pump off, valve stays closed | Blueprint v15, sheet 34 |
+| 2 | The turret stops moving and keeps retrying the hotspot every few seconds | Proposed firmware rule |
+| 3 | After about 1 minute without the Pi, it returns home and waits | Proposed firmware rule |
+| 4 | When the link is back, it continues the patrol from the next stop | Proposed firmware rule |
+| 5 | The app shows the turret as offline after 30 s without a check-in | Increment 1 code (section 6.7) |
+
+Worst case is a missed spray, never a wrong one. Why not a USB backup: a wired link would have to run through the lift and the swivel, the joints with the highest cable-fatigue risk (section 3.6), to back up a failure that is already safe. The ESP32's USB port is kept for flashing and debugging. A USB backup link stays on the stretch list.
+
 ---
 
 ## 7. System Architecture
 
 ### 7.1 Architecture style
-A **modular monolith** server (one Next.js app for API + grower app) and a **thin device client** (the ESP32). The ESP32 only moves, photographs, sprays and reports; all detection and decisions happen on the server. This follows the "ESP32 plus cloud detection (most practical)" option in the proposal: the ESP32-S3 does not have the memory for an accurate three-pest model, while a laptop or server does. The few seconds of delay are fine because these pests move slowly.
+A **modular monolith** on the Raspberry Pi 5 (one Next.js app for API + mobile app, the SQLite database, and a FastAPI + YOLO11n model server) and a **thin device client** (the ESP32-S3 CAM). The ESP32 only moves, photographs, sprays and reports; all detection and decisions happen on the Pi. The ESP32-S3 does not have the memory for an accurate pest model, and an on-board Pi 5 removes the need for a laptop or an internet connection in the field.
 
 ### 7.2 High-level architecture
 
 ```mermaid
 flowchart TB
-    subgraph Garden["Garden bed"]
+    subgraph Farm["Turret (on the turntable)"]
         direction LR
         T["Turret (ESP32-S3)<br/>camera · pan · lift · swivel · pump"]
         SIM["Turret simulator<br/>(scripts/simulate.ts)"]
     end
 
-    subgraph Server["PestBlaster server (Next.js)"]
+    subgraph Server["Raspberry Pi 5: PestBlaster server (Next.js)"]
         direction TB
         DAPI["Device API<br/>/api/device/*"]
         DET[Pest detector]
@@ -305,12 +368,12 @@ flowchart TB
         direction LR
         DB[("SQLite<br/>data/pestblaster.db")]
         SNAP[("Snapshots<br/>data/snapshots/")]
-        MODEL["Model server<br/>(Increment 2)"]
+        MODEL["Model server<br/>FastAPI + YOLO11n (Increment 2)"]
     end
 
     APP([Grower app on phone])
 
-    T -- Wi-Fi --> DAPI
+    T -- Wi-Fi (Pi hotspot) --> DAPI
     SIM -. same API .-> DAPI
     DAPI --> DET --> DEC --> STORE
     DET -. DETECTOR=http .-> MODEL
@@ -342,18 +405,18 @@ sequenceDiagram
 ### 7.4 Deployment
 | Setup | When | Notes |
 |-------|------|-------|
-| Laptop on the garden Wi-Fi | Increment 1–3 demos and testing | `npm run build && npm start`. Phone and ESP32 connect to `http://<laptop-ip>:3000` |
-| Small always-on machine (Raspberry Pi / mini PC / VPS) | Field testing | Same app; SQLite file persists on disk |
+| Laptop | Software development and simulator demos | `npm run build && npm start`. Phone connects to `http://<laptop-ip>:3000` on the same Wi-Fi |
+| Raspberry Pi 5 (4 GB) in the enclosure on the turntable | Prototype and field testing | Same app + SQLite + model server; no laptop or internet needed. The laptop is only for training the model and flashing the ESP32 |
 
 Serverless hosts (e.g. Vercel) are **not** suitable while the database is a local SQLite file, because their disk is not persistent.
 
 ### 7.5 Key design decisions
 | Decision | Why |
 |----------|-----|
-| Detection on the server, not the ESP32 | Accurate models need more memory than the ESP32-S3 has; server models can be retrained and swapped without reflashing |
-| Server decides fire/aim, ESP32 obeys | One place for the rule; settings change instantly from the app; firmware stays small |
+| Detection on the on-board Raspberry Pi 5, not the ESP32 | Accurate models need more memory than the ESP32-S3 has; models can be retrained and swapped without reflashing; works without internet. Rejected: a laptop or cloud server (needs a network link in the field) |
+| Pi decides fire/aim, ESP32 obeys | One place for the rule; settings change instantly from the app; firmware stays small |
 | Turret confirms each spray | Spray log reflects what really happened, not what was requested |
-| Commands delivered on heartbeat | ESP32 only makes outgoing requests; works behind any home router, no open ports |
+| Commands delivered on heartbeat | ESP32 only makes outgoing requests; if the Pi stops answering, the turret stops and waits |
 | SQLite built into Node 22 | Zero setup, no accounts, one file to back up; enough for one turret |
 | Simulator uses the real device API | Everything tested with the simulator is what the firmware will use |
 
@@ -530,17 +593,16 @@ Turret at pan 90°, lift 150 mm, swivel 60° sees a larva right of and slightly 
 
 ## 11. Hardware Summary
 
-*(planned — from the proposal and the draft bill of materials; final parts to be confirmed with the adviser)*
+*From the (for approval) Hardware & Software Specifications. Part codes, sizes and quantities are on blueprint v15; differences are listed in section 16.4.*
 
 | Subsystem | Parts |
 |-----------|-------|
-| Controller & vision | ESP32-S3 with 8 MB PSRAM (e.g. ESP32-S3-DevKitC-1 N16R8 or Freenove ESP32-S3-WROOM CAM) · OV5640 5 MP camera, no-IR-filter lens · 850 nm IR LED ring · microSD for buffering photos when Wi-Fi drops |
-| 360° pan | Stepper motor (proposal) or continuous-rotation servo (draft BOM) · 12-wire capsule slip ring · rotary water union for the hose |
-| Lift | Motor + threaded rod in a 1¼″/1″ telescoping PVC post (30 cm travel) · 2 × limit switches (top, bottom) |
-| Swivel | MG996R metal-gear servo (±170° hanging mount) · MG90S head tilt |
-| Deterrent | R385 12 V diaphragm pump · 12 V normally-closed ¼″ solenoid valve · 2-channel relay or MOSFET module · 6 mm tubing · 0.3–0.5 mm brass misting nozzle · recycled 2–3 L HDPE bottle · neem oil, garlic–chili mix, or Bt |
-| Power | 12 V 7 Ah SLA battery · 10–20 W solar panel + PWM charge controller (or 12 V 3 A adapter) · buck converters for 5 V logic and servos · inline fuse and switch |
-| Structure | 500 × 500 mm pallet-wood base with brick weights · 0.5 m PVC arm with internal metal rod · sand-filled end cap counterweight · IP65 enclosure with cable glands and silica gel |
+| Power | 12 V 7 Ah SLA battery on the turntable (battery only, no solar panel) · 5 A fuse · SPST main switch · latching emergency stop (cuts all motors, servos and the pump) · INA219 voltage/current sensor · LM2596 12→5 V · XL4015 12→6 V (servos) · AMS1117 3.3 V · 12→5 V 3 A buck for a pocket Wi-Fi router (remote field testing only) |
+| Base / rotation | Pallet-wood base staked to the ground · lazy susan bearing (≈ 300 mm) · plywood turntable disc · NEMA 17 + A4988 on the turntable · GT2 belt, motor pulley and fixed centre pulley · KW12 home switch + home tab · splash skirt |
+| Vertical lift | 12 V linear actuator, 300 mm stroke, built-in end limit switches + DRV8871 · telescoping PVC post (1¼″ sleeve, 1″ inner pipe, 30 cm travel) · actuator clamps and rod bracket |
+| Crossbar and head | PVC T-crossbar: 0.5 m arm + 0.25 m counter-arm, internal steel rod · counterweight end cap · ESP32-S3 CAM (ESP32-S3-WROOM-1 N16R8) · PCA9685 servo driver · PCF8574 I/O expander · OV5640 5 MP (IR-cut removed) · 850 nm IR LED ring (night patrols) · hanging swivel mount ±90° · 2 × MG996R (swivel, tilt) · sealed head housing with clear window |
+| Deterrent | Recycled 2–3 L bottle upside down on a stand, UV-shielded · vented refill lid · inline strainer · R385 12 V diaphragm pump + 2-channel relay · coiled 6 mm PU hose · 12 V NC solenoid valve under the arm tip · silicone service loop 150–200 mm · brass misting nozzle |
+| Enclosure | IP65 enclosure with cable glands and silica gel on the turntable · Raspberry Pi 5 (4 GB) inside, linked to the ESP32-S3 CAM over its own Wi-Fi hotspot (enclosure must be plastic: metal blocks Wi-Fi) · rain cover over the stepper and battery |
 
 ---
 
@@ -684,21 +746,19 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 ## 16. Known Issues, Caveats & Open Questions
 
 ### 16.1 Open questions (to settle with the adviser)
-1. **Controller:** the proposal names the ESP32-S3; the draft BOM also lists Raspberry Pi 4 and ESP32-CAM options. This software assumes **ESP32-S3 + server-side detection**.
-2. **Pan drive:** stepper motor (proposal) or continuous-rotation servo (draft BOM)? A continuous servo has no position feedback, so the firmware cannot know its true pan angle without an encoder or a home switch.
-3. **Reservoir level:** no level sensor is in the BOM. Options: estimate from pump run time (what the simulator does), a float switch, or an ultrasonic/capacitive level sensor.
-4. **Hose over 360°:** rotary water union, or limit pan to about ±180° with hose slack?
-5. **Where the server runs** during field testing (laptop, Raspberry Pi, or a hosted machine).
-6. **Approval sheet increments:** Appendix A is a proposed split for the adviser to confirm.
+1. **Reservoir level:** the approved design estimates it from total pump run time (what the simulator does). A float switch would be more reliable; not in the parts list.
+2. **Approval sheet increments:** Appendix A follows the revised approval sheet, which is still pending adviser approval.
+3. **Remote access:** "from anywhere" monitoring and live view need an internet link for the phone (pocket router), while detection works offline.
 
 ### 16.2 Risk register
 | Risk | Impact | Mitigation |
 |------|--------|------------|
 | Not enough lettuce pest photos to train a good model | Low accuracy | Start collecting now; combine public datasets with our own photos (Appendix C) |
 | Loopers blend into leaves | Missed pests | Separate accuracy per pest; tune threshold per pest if needed |
-| Wi-Fi drops in the garden | Turret cannot get decisions | Buffer photos to microSD; firmware holds (never sprays blind) when offline |
+| Link to the Pi fails | Turret cannot get decisions | Firmware stops all motion and waits (never sprays blind) |
 | Wrong spray on a leaf with no pest | Wasted deterrent | Confidence threshold + cooldown, both adjustable in the app |
-| Arm sway in wind | Misaimed spray | Re-capture after aiming before spraying *(planned firmware step)* |
+| Arm sway in wind | Misaimed spray | Re-capture after aiming before spraying *(planned firmware step)*; aim claimed valid only up to 0.5 m/s wind |
+| Pi overheats in the sealed enclosure | Slow or stopped detection | Active cooler and box fan; test in direct sun (Appendix B #13) |
 | Swivel wiring fatigue | Camera loses connection | Strain relief, cycle testing (proposal) |
 
 ### 16.3 Technical caveats
@@ -708,6 +768,34 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 - Single turret (`turret-1`) in the app. The database and device API already accept other device IDs.
 - Node prints an `ExperimentalWarning` for SQLite on start-up. It is harmless.
 - Aim math assumes the nozzle points where the camera center points; the real offset must be measured and calibrated.
+
+### 16.4 Open items: approval documents vs blueprint v15
+The (for approval) documents and blueprint v15 disagree on these points. Pick one for each and update the other so the thesis and the build match.
+
+| # | Item | (for approval) documents | Blueprint v15 |
+|---|------|--------------------------|---------------|
+| 1 | ESP32 ↔ Pi 5 link | USB cable along the post and arm | Wi-Fi only, Pi 5 hotspot `PestBlaster` (sheets 08, 09, 34). **Decided 16 Oct: Wi-Fi.** The approval documents need the wording change below |
+| 2 | Leaf undersides | Photographs leaf tops and undersides; head angles upward under leaves | Exposed leaf surfaces and fresh damage only |
+| 3 | Night detection (IR) | Stretch feature | Main feature: night patrol with IR LEDs (B1, sheet 43). **Decided 17 Oct: main feature (IR illuminator is built).** The approval documents need the wording change |
+| 4 | Leaf damage | Not mentioned | Damage class with its own spray (3 bursts, own 5 s pump cap, sheet 50) |
+| 5 | Scan path | Set stops over the two boxes, three heights | 12 stops, lift down by default, 4 frames per stop (sheet 20); plot setup in the app (sheet 45) |
+| 6 | Base and turntable | 0.5 m square pallet base, ≈ 480 mm disc | 350 × 500 base on planks, Ø396 disc (free boards) |
+| 7 | Confidence threshold | 60% default | 0.5 on the decision flow (sheet 34) |
+| 8 | Pocket Wi-Fi router | Used for remote field testing | Optional, only for internet |
+| 9 | Node.js on the Pi | — | Node 20 (sheet 34); the app needs Node 22.13+ for its built-in SQLite |
+
+### 16.5 Code vs the approved design
+The Increment 1 code was written before these changes. Work items for the app (`src/`):
+
+| Area | Code today | Approved design |
+|------|-----------|-----------------|
+| Pest classes | Done: `looper`, `armyworm_cutworm`, `aphid_colony` (`src/lib/pests.ts`) | loopers, armyworms/cutworms, aphid colonies |
+| Head | One swivel axis, −170° to +170° (`src/lib/targeting.ts`) | Swivel ±90° plus tilt |
+| Scan | 72 photos: 12 pans × 3 heights × 2 angles incl. under-leaf (`src/lib/scan.ts`) | Stops over the two boxes only; see 16.4 #5 |
+| Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
+| Battery | Not tracked | Battery level in the app and low-battery alert (INA219) |
+| Live view | None | Live camera view, scanning pauses while open *(planned)* |
+| Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.9 to the firmware |
 
 ---
 
@@ -726,7 +814,7 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 | Run everything | [Section 14.3](#143-running) |
 
 **Rules of thumb**
-1. The turret never sprays without a server `fire` decision or a manual command.
+1. The turret never sprays without a `fire` decision from the Pi or a manual command.
 2. When in doubt, hold. Every hold has a reason the grower can read.
 3. The simulator and the firmware use the same API. If you change the API, change both.
 4. Same pest colors and shapes everywhere.
@@ -737,30 +825,45 @@ Add it to `PEST_TYPES` and `PESTS` in `src/lib/pests.ts`, add a color token and 
 
 ## Appendix A — Increment Plan
 
-*Proposed split for the approval sheet. Percentages follow the approval sheet template; functionalities are for the team and adviser to confirm.*
+*From the revised CpE 481 approval sheet (proposed revision, pending adviser approval).*
 
 | Milestone | % | Functionalities included |
 |-----------|---|--------------------------|
-| **Increment 1** | 40% | **Software working end to end without hardware.** Backend server and database · device API for the turret · grower app (turret status and map, pest photos and logs, spray history, alerts, trends) · manual override (spray now, move, return home, pause, auto-spray off, spray settings) · fire rule and aiming logic with unit tests · 360° scan path · pluggable detector · turret simulator running the full scan → detect → aim → spray → log loop |
-| **Increment 2** | 60% | Increment 1 plus **real detection and a talking ESP32.** Lettuce pest dataset collected and labeled · model trained and served (`DETECTOR=http`) · accuracy measured per pest · ESP32-S3 firmware: Wi-Fi, heartbeat, camera capture and upload, runs commands (bench test, motors not yet mounted) |
-| **Increment 3** | 80% | Increment 2 plus **the physical turret.** 360° pan, telescoping lift with limit switches, swivel mount · pump + valve on relay with timed bursts · reservoir level measurement · firmware scan–detect–aim–spray loop on the real turret · aim calibration |
-| **Increment 4** | 100% | Increment 3 plus **field-ready and evaluated.** Weatherproof enclosure and solar power · phone push notifications · night detection with IR (stretch) · field test on a lettuce bed · evaluation against a monitoring-only baseline (Appendix B) · final documentation |
+| **Increment 1** | 40% | **Hardware foundation.** Build the physical turret: base, post, arm, and the rotating rod with camera and nozzle on it. Get the motors, lift, camera streaming, manual spraying and emergency stop all working. Set up the Raspberry Pi 5 and its link to the ESP32-S3 (the approval sheet says USB; changing to Wi-Fi, section 16.4). Start collecting photos of real pests for the model. Run the lab safety tests on the deterrent spray. *Done when:* the turret can be told to point anywhere in the full circle and spray on command. |
+| **Increment 2** | 60% | **Detection in the loop.** Train the pest-recognition model, run it on the Raspberry Pi 5, and connect it to the turret, so the system can scan around, spot pests and mark where they are. *Done when:* it can do a full scan of a plant and correctly draw boxes around pests, but is not yet allowed to spray automatically. |
+| **Increment 3** | 80% | **Autonomous operation + app.** Turn a spotted pest's position into an aim command, confirm it is really a pest before acting, and only spray once it is sure no person is nearby. Build out the app (live view, alerts, manual control). Seal the electronics against weather. *Done when:* the whole loop (scan, spot, confirm, aim, spray) runs on its own on a test plant. |
+| **Increment 4** | 100% | **Field deployment.** Run unsupervised for several days to catch reliability issues, then put it in a real farm plot next to an untouched control bed for several weeks. Compare damage. Write up the results. *Done when:* there is a working system in the field with real before/after numbers. |
+
+**Thesis 1 schedule (AY 2026–27, 1st semester):** 25% initial build Oct 12–30 (check Oct 30: base rotation and lift) · 50% build Nov 3–13 · kickstarter video Nov 16–20 · panel defense Nov 23–27.
+
+The software built so far (the old "Increment 1: software without hardware") is the base the app and Pi server are built on.
 
 ---
 
 ## Appendix B — Testing Strategies
 
-| # | Strategy | What we measure | How |
-|---|----------|-----------------|-----|
-| B.1 | Determining the detection accuracy per pest type | Precision, recall, F1 for each of the three pests; confusion between them | Held-out labeled test photos (Appendix C); later, photos from the real turret |
-| B.2 | Determining the average response time from detection to spray | Seconds from photo taken to spray finished | Timestamps: capture `created_at` → fire event `created_at`; plus stopwatch on the physical turret |
-| B.3 | Determining the aiming accuracy of the turret | Distance (mm) between nozzle hit point and the pest position | Paper targets on leaves at known positions; water-sensitive paper or dye in the spray |
-| B.4 | Determining the coverage of the scan path | % of marked spots on the plant (top, middle, soil, leaf undersides) the camera sees in one sweep | Markers placed around a plant; count how many appear in captured photos |
-| B.5 | Determining the reduction in leaf damage | % leaf area damaged, with PestBlaster vs. monitoring-only bed | Two beds over the same period; photograph and measure leaves weekly |
-| B.6 | Determining the reliability of manual override | % of app commands completed and time to complete | Send N commands from the app; read status and timestamps from the command log |
-| B.7 | Determining deterrent use per spray | mL per burst at each spray length | Collect sprays into a measuring cylinder |
+*From the revised approval sheet. The method, expected value and pass mark for each measured line are on the test sheet, blueprint v15 sheet 19.*
 
-B.2 and B.6 can already be run in software with the simulator in Increment 1.
+| # | Strategy | What is checked |
+|---|----------|-----------------|
+| 1 | Deterrent works | Pests eat noticeably less on sprayed leaves than on unsprayed leaves |
+| 2 | Deterrent is safe for the plant | Daily spray for a week: no burns, spots or wilting |
+| 3 | Parts work on their own | Each motor, switch, pump, the camera, the Pi 5 and the Pi–ESP32 link tested alone, many times |
+| 4 | The turret moves reliably | Full turns and lift cycles: no wobble, loosening or frayed wiring at the rotating joint |
+| 5 | The model actually finds pests | On the Pi 5, on unseen photos, in daylight, dim light and at night with the IR illuminator |
+| 6 | It doesn't spray things that aren't pests | Clean plants, dirt, dead leaves, helpful bugs: it stays quiet |
+| 7 | The spray lands on target | Marked targets around the full circle and at different heights: distance from target |
+| 8 | Each burst is consistent | Weigh many bursts; sizes stay close |
+| 9 | It reacts fast enough | Time from photo to spray with the model on the Pi; turret stops and never sprays if the Pi or link fails |
+| 10 | It's safe around people | Never sprays a hand or face in view; E-stop kills everything almost instantly |
+| 11 | The app is usable | Real users: every feature works, alerts arrive quickly, easy to use |
+| 12 | It has enough power | Battery alone (no solar), Pi running: how long it lasts |
+| 13 | It stays dry | Hose test: nothing inside the enclosure or rotating joint; Pi stays cool in direct sun |
+| 14 | It survives days unattended | Non-stop for days, including with no internet: no crash, no lost data |
+| 15 | It reduces damage in a real lettuce farm plot | Protected bed vs unprotected bed over a full growing cycle |
+| 16 *(proposed)* | The Wi-Fi link holds | Full patrols with the motors and pump running: % of photos that got a Pi reply and reply time; then switch the hotspot off mid-patrol. Pass: ≥ 99% replied (target, to confirm) and no spray during any dropout |
+
+Software measures that can already be run with the simulator: response time (capture `created_at` → fire event `created_at`) and manual override reliability (command status and timestamps).
 
 ---
 
@@ -769,11 +872,11 @@ B.2 and B.6 can already be run in software with the simulator in Increment 1.
 *(planned — Increment 2)*
 
 ### C.1 Approach
-Train a small object detector (for example **YOLOv8n / YOLO11n**) on three classes: `looper`, `armyworm_cutworm`, `aphid_colony`. Run it on the server behind a tiny HTTP service that follows the contract in section 13.2 (for example Python + FastAPI + Ultralytics). The Next.js server then only needs `DETECTOR=http`.
+Train **YOLO11n** in Google Colab on three classes: looper, armyworm/cutworm, aphid cluster. Export it to NCNN and run it on the Raspberry Pi 5 after OpenCV preprocessing, behind a FastAPI + Ultralytics service that follows the contract in section 13.2. The Next.js server then only needs `DETECTOR=http`.
 
 ### C.2 Dataset
 - Public pest image datasets (e.g. IP102, Roboflow Universe pest sets) for the three pests, filtered to leafy vegetables where possible.
-- **Our own photos** of lettuce taken with the turret camera at 10–20 cm, leaf tops and undersides, different times of day. These matter most because they match what the turret will see.
+- **Our own photos** of lettuce taken with the turret camera (OV5640) at working distance, different times of day (and at night with the IR LEDs). These matter most because they match what the turret will see.
 - Negative photos (healthy leaves, soil, water drops, leaf damage without a pest) so the model learns not to spray those.
 - Label with bounding boxes; split 70 / 20 / 10 (train / validation / test) by plant, not by photo, so near-duplicate photos do not leak into the test set.
 
@@ -782,7 +885,7 @@ Train a small object detector (for example **YOLOv8n / YOLO11n**) on three class
 |--------|----------------------------------|
 | mAP@0.5 on the test set | ≥ 0.70 |
 | Recall per pest | ≥ 0.75 (looper may be lower; report separately) |
-| Server inference time per photo | < 1 s on the demo laptop |
+| Inference time per photo on the Pi 5 | Measure (blueprint v15 estimate ≈ 0.1 s for YOLO11n NCNN at 640 × 480, sheet 34) |
 
 The confidence threshold in the app is then set from the validation results (the point where false sprays are acceptably low).
 
@@ -802,7 +905,7 @@ The confidence threshold in the app is then set from the validation results (the
 | Frontend and backend architecture | Done |
 | Setup, configuration and common tasks | Done |
 | Known issues, open questions, risk register | Done |
-| Increment plan and testing strategies | Proposed — confirm with adviser |
+| Increment plan and testing strategies | From the revised approval sheet, pending adviser approval |
 | Trained model and accuracy results | Pending (Increment 2) |
-| Firmware | Pending (Increment 2–3) |
-| Circuit design and prototype photos | Pending (Increment 3) |
+| Firmware | Bring-up test in `firmware/bringup/`; main firmware pending |
+| Circuit design and prototype photos | Schematic v15 done (team Drive); prototype photos pending |
