@@ -3,7 +3,7 @@ from pathlib import Path
 
 # Must match PEST_TYPES in src/lib/pests.ts, in the same order.
 # The order is the model's class id: 0, 1, 2.
-CLASSES = ["diamondback_larva", "looper", "aphid_cluster"]
+CLASSES = ["looper", "armyworm_cutworm", "aphid_colony"]
 
 ROOT = Path(__file__).resolve().parent
 RAW_DIR = ROOT / "raw"

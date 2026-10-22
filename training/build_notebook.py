@@ -15,9 +15,9 @@ so the turret knows where to aim. The trained model is then served to the PestBl
 
 | Class id | Name |
 |---|---|
-| 0 | `diamondback_larva` |
-| 1 | `looper` |
-| 2 | `aphid_cluster` |
+| 0 | `looper` |
+| 1 | `armyworm_cutworm` |
+| 2 | `aphid_colony` |
 
 **Before you start**
 1. `Runtime → Change runtime type → T4 GPU`
@@ -39,7 +39,7 @@ BATCH      = 16
 SEED       = 42
 
 # Must match PEST_TYPES in src/lib/pests.ts, in the same order.
-EXPECTED_CLASSES = ['diamondback_larva', 'looper', 'aphid_cluster']
+EXPECTED_CLASSES = ['looper', 'armyworm_cutworm', 'aphid_colony']
 
 # Acceptance targets from the documentation (Appendix C.3). Confirm them with the adviser.
 TARGET_MAP50 = 0.70

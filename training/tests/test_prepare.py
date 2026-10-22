@@ -36,7 +36,7 @@ def raw(tmp_path):
         photo(neg / f"h{i}.jpg", 100 + i)
     sources = tmp_path / "sources.yaml"
     sources.write_text(yaml.safe_dump({"sources": {
-        "rf": {"map": {"aphid": "aphid_cluster", "cabbage looper": "looper", "beetle": None}, "group": r"^(plant\d+)_"},
+        "rf": {"map": {"aphid": "aphid_colony", "cabbage looper": "looper", "beetle": None}, "group": r"^(plant\d+)_"},
         "healthy": {"negatives": True},
     }}))
     return tmp_path
@@ -61,7 +61,7 @@ def test_builds_yolo_dataset_with_our_class_ids(raw):
     got = labels(raw)
     assert len(got) == 24
     ids = {int(line.split()[0]) for _, text in got.values() for line in text.splitlines()}
-    assert ids <= {CLASSES.index("aphid_cluster"), CLASSES.index("looper")}
+    assert ids <= {CLASSES.index("aphid_colony"), CLASSES.index("looper")}
     assert sum(1 for _, text in got.values() if text == "") == 4  # the healthy photos
 
 

@@ -40,7 +40,7 @@ def draw_pest(d: ImageDraw.ImageDraw, cls: int, x0: float, y0: float, bw: float,
         d.ellipse([x0 + bw - bh * 0.4, y0 + bh * 0.3, x0 + bw, y0 + bh * 0.7], fill=(100, 80, 50))
     elif cls == 1:  # looper: arched body
         d.arc([x0, y0, x0 + bw, y0 + bh * 2], 180, 360, fill=(135, 195, 100), width=max(3, int(bh / 2.5)))
-    else:  # aphid cluster: many small dots
+    else:  # aphid colony: many small dots
         for _ in range(22):
             cx, cy = x0 + rng.uniform(0.1, 0.9) * bw, y0 + rng.uniform(0.1, 0.9) * bh
             d.ellipse([cx - 4, cy - 3, cx + 4, cy + 3], fill=(160, 200, 80), outline=(80, 110, 40))
@@ -79,10 +79,10 @@ def make(out: Path, n: int, negatives: int, seed: int) -> None:
         "sources:\n"
         "  smoke-pests:\n"
         "    map:\n"
-        "      diamondback moth: diamondback_larva\n"
+        "      diamondback moth: null\n"
         "      cabbage looper: looper\n"
-        "      aphid: aphid_cluster\n"
-        "      armyworm: null\n"
+        "      aphid: aphid_colony\n"
+        "      armyworm: armyworm_cutworm\n"
         "    group: '^(plant\\d+)_'\n"
         "  smoke-healthy:\n"
         "    negatives: true\n"

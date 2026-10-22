@@ -15,8 +15,8 @@ def jpeg() -> bytes:
 
 def test_to_detections_matches_the_app_contract():
     out = to_detections([(0.1, 0.2, 0.3, 0.5, 2, 0.8), (0.5, 0.5, 0.6, 0.6, 0, 0.95)])
-    assert out[0] == {"pest": "diamondback_larva", "confidence": 0.95, "bbox": {"x": 0.5, "y": 0.5, "w": 0.1, "h": 0.1}}
-    assert out[1]["pest"] == "aphid_cluster"
+    assert out[0] == {"pest": "looper", "confidence": 0.95, "bbox": {"x": 0.5, "y": 0.5, "w": 0.1, "h": 0.1}}
+    assert out[1]["pest"] == "aphid_colony"
     assert out[1]["bbox"] == {"x": 0.1, "y": 0.2, "w": 0.2, "h": 0.3}
 
 
@@ -27,13 +27,13 @@ def test_to_detections_clips_and_drops_bad_boxes():
 
 
 def test_check_names():
-    check_names({0: "diamondback_larva", 1: "looper", 2: "aphid_cluster"})
+    check_names({0: "looper", 1: "armyworm_cutworm", 2: "aphid_colony"})
     with pytest.raises(SystemExit):
-        check_names({0: "looper", 1: "diamondback_larva", 2: "aphid_cluster"})
+        check_names({0: "armyworm_cutworm", 1: "looper", 2: "aphid_colony"})
 
 
 def test_detect_endpoint():
-    app = create_app(lambda img: [(0.1, 0.1, 0.2, 0.2, 1, 0.7)], {"model": "fake"})
+    app = create_app(lambda img: [(0.1, 0.1, 0.2, 0.2, 0, 0.7)], {"model": "fake"})
     client = TestClient(app)
     res = client.post("/detect", content=jpeg(), headers={"content-type": "image/jpeg"})
     assert res.status_code == 200

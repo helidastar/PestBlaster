@@ -6,7 +6,7 @@
 
 What it does:
   1. Reads every source folder listed in training/sources.yaml (YOLO format).
-  2. Renames source classes to ours (diamondback_larva, looper, aphid_cluster), drops the rest.
+  2. Renames source classes to ours (looper, armyworm_cutworm, aphid_colony), drops the rest.
   3. Removes unreadable and tiny photos, broken label lines, and duplicates
      (including resized copies: the largest copy is kept).
   4. Shrinks photos to --max-size on the longest side (labels are fractions, so they still fit).

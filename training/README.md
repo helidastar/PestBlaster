@@ -21,9 +21,9 @@ The model is a **YOLO object detector** (YOLO11n). A classifier would only say *
 
 | Class id | Name | Label rule |
 |---|---|---|
-| 0 | `diamondback_larva` | One box per larva, tight around the body |
-| 1 | `looper` | One box per looper, including the arched part |
-| 2 | `aphid_cluster` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. |
+| 0 | `looper` | One box per looper, including the arched part |
+| 1 | `armyworm_cutworm` | One box per larva, tight around the body |
+| 2 | `aphid_colony` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. |
 
 The order must match `PEST_TYPES` in `src/lib/pests.ts` (a test checks this).
 
@@ -44,9 +44,9 @@ Read each dataset's license before use; most allow academic use only, which fits
 | Source | What to take | Notes |
 |---|---|---|
 | **Our own photos** (most important) | All three pests on real lettuce, leaf tops **and undersides**, at 10–20 cm, morning / noon / late afternoon | These match what the turret will see. Aim for at least half of the dataset. |
-| [Roboflow Universe](https://universe.roboflow.com) | Search "aphid", "diamondback moth", "plutella", "cabbage looper", "caterpillar" | Many are already labeled with boxes. Export as **YOLOv8**. Check each dataset's license and class names. |
-| [IP102](https://github.com/xpwu95/IP102) | Its detection subset has bounding boxes for 102 insect pests | Check its class list for aphids, loopers and diamondback moth, and use only those. Academic use. |
-| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Plutella xylostella*, *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. Keep only CC-BY / CC0 photos and credit them. |
+| [Roboflow Universe](https://universe.roboflow.com) | Search "aphid", "armyworm", "cutworm", "spodoptera", "cabbage looper", "caterpillar" | Many are already labeled with boxes. Export as **YOLOv8**. Check each dataset's license and class names. |
+| [IP102](https://github.com/xpwu95/IP102) | Its detection subset has bounding boxes for 102 insect pests | Check its class list for aphids, loopers, armyworms and cutworms, and use only those. Academic use. |
+| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Spodoptera litura*, *Agrotis* spp., *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. Keep only CC-BY / CC0 photos and credit them. |
 | **No-pest photos** | Healthy lettuce, bite holes without a pest, water drops, soil, bird droppings, leaf veins | Teaches the model when **not** to spray. Aim for about 10–20% of the dataset. |
 
 ### Taking our own photos
