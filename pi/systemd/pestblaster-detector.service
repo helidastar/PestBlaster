@@ -1,0 +1,16 @@
+[Unit]
+Description=PestBlaster model server (YOLO11n)
+After=network-online.target
+# Starts only once a trained model is in place (see pi/README.md).
+ConditionPathExists=@REPO@/training/models/best_ncnn_model
+
+[Service]
+User=@USER@
+WorkingDirectory=@REPO@
+Environment=PB_MODEL=@REPO@/training/models/best_ncnn_model
+ExecStart=@REPO@/training/.venv/bin/python training/serve.py --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

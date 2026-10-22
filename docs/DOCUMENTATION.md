@@ -406,7 +406,7 @@ sequenceDiagram
 | Setup | When | Notes |
 |-------|------|-------|
 | Laptop | Software development and simulator demos | `npm run build && npm start`. Phone connects to `http://<laptop-ip>:3000` on the same Wi-Fi |
-| Raspberry Pi 5 (4 GB) in the enclosure on the turntable | Prototype and field testing | Same app + SQLite + model server; no laptop or internet needed. The laptop is only for training the model and flashing the ESP32 |
+| Raspberry Pi 5 (4 GB) in the enclosure on the turntable | Prototype and field testing | Same app + SQLite + model server; no laptop or internet needed. The laptop is only for training the model and flashing the ESP32. Set-up steps and script: [`pi/README.md`](../pi/README.md) |
 
 Serverless hosts (e.g. Vercel) are **not** suitable while the database is a local SQLite file, because their disk is not persistent.
 
