@@ -16,7 +16,7 @@ const TABS = [
 
 export function Nav() {
   const path = usePathname();
-  const { data } = usePoll<StatusResponse>("/api/status", 10000);
+  const { data } = usePoll<StatusResponse>("/api/status", 3000);
   const link = ({ href, label, Icon }: (typeof TABS)[number]) => (
     <Link key={href} href={href} aria-current={path === href ? "page" : undefined}>
       <Icon />
