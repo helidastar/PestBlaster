@@ -28,6 +28,8 @@ const PEST_RATE = Number(opt("pest-rate", "0.3"));
 /** Deterrent used per second of spraying, in percent of a full 2.5 L reservoir (R385 pump ≈ 2 L/min). */
 const PCT_PER_SPRAY_SECOND = 1.3;
 const HOME: Pose = { pan: 0, lift: 300, swivel: 60 };
+/** How often the turret checks for a "stop" while a manual spray runs. */
+const STOP_POLL_MS = 250;
 
 let pose: Pose = { ...HOME };
 let reservoir = Number(opt("reservoir", "100"));
@@ -121,13 +123,21 @@ function renderLeaf(p: Pose, pests: Detection[]): string {
 
 // ---------- turret actions ----------
 
-async function heartbeat(): Promise<void> {
+/** Commands that arrived while a manual spray was running; run after it ends. */
+const queued: Command[] = [];
+
+async function checkIn(): Promise<Command[]> {
   const res = await postJson<{ mode: string; settings: DeviceSettings; commands: Command[] }>(
     "/api/device/heartbeat",
-    { pose, reservoirPct: round1(reservoir), firmware: "simulator-0.1" },
+    { pose, reservoirPct: round1(reservoir), firmware: "simulator-0.2" },
   );
   settings = res.settings;
-  for (const cmd of res.commands) await runCommand(cmd);
+  return res.commands;
+}
+
+async function heartbeat(): Promise<void> {
+  const cmds = [...queued.splice(0), ...(await checkIn())];
+  for (const cmd of cmds) await runCommand(cmd);
 }
 
 async function spray(durationMs: number, source: "auto" | "manual", captureId: number | null) {
@@ -135,10 +145,29 @@ async function spray(durationMs: number, source: "auto" | "manual", captureId: n
     log("  ✗ reservoir empty, cannot spray");
     return false;
   }
-  log(`  💧 spraying ${durationMs} ms (${source}) at ${fmtPose(pose)}`);
-  await sleep(durationMs);
-  reservoir = Math.max(0, reservoir - (durationMs / 1000) * PCT_PER_SPRAY_SECOND);
-  await postJson("/api/device/fires", { source, durationMs, pose, captureId });
+  log(`  💧 spraying up to ${durationMs} ms (${source}) at ${fmtPose(pose)}`);
+  const start = Date.now();
+  if (source === "manual") {
+    // A manual spray lasts while the button is held: keep checking in so a "stop" ends it early.
+    let stopCmd: Command | null = null;
+    while (!stopCmd && Date.now() - start < durationMs) {
+      await sleep(Math.min(STOP_POLL_MS, durationMs - (Date.now() - start)));
+      for (const cmd of await checkIn()) {
+        if (cmd.type === "stop" && !stopCmd) stopCmd = cmd;
+        else queued.push(cmd);
+      }
+    }
+    if (stopCmd) {
+      log(`→ manual command #${stopCmd.id}: stop`);
+      await postJson(`/api/device/commands/${stopCmd.id}`, { ok: true });
+    }
+  } else {
+    await sleep(durationMs);
+  }
+  const sprayed = Math.min(durationMs, Date.now() - start);
+  reservoir = Math.max(0, reservoir - (sprayed / 1000) * PCT_PER_SPRAY_SECOND);
+  log(`  💧 sprayed ${sprayed} ms`);
+  await postJson("/api/device/fires", { source, durationMs: sprayed, pose, captureId });
   return true;
 }
 
@@ -148,6 +177,7 @@ async function runCommand(cmd: Command) {
   if (cmd.type === "fire") ok = await spray(Number(cmd.payload.durationMs ?? 400), "manual", null);
   else if (cmd.type === "move") pose = cmd.payload.pose as Pose;
   else if (cmd.type === "home") pose = { ...HOME };
+  // "stop" with no spray running has nothing to stop.
   await postJson(`/api/device/commands/${cmd.id}`, { ok });
 }
 

@@ -303,6 +303,14 @@ export function queueCommand(
   return toCommand(db.prepare("SELECT * FROM commands WHERE id = ?").get(Number(res.lastInsertRowid)) as Row);
 }
 
+/** Stops a manual spray: drops any spray the turret has not picked up yet, then tells it to stop. */
+export function queueStop(db: DatabaseSync, deviceId: string): Command {
+  db.prepare(
+    "UPDATE commands SET status = 'failed', done_at = ? WHERE device_id = ? AND type = 'fire' AND status = 'pending'",
+  ).run(nowIso(), deviceId);
+  return queueCommand(db, deviceId, "stop");
+}
+
 /** Hands pending commands to the turret and marks them as sent. */
 export function takePendingCommands(db: DatabaseSync, deviceId: string): Command[] {
   const rows = db

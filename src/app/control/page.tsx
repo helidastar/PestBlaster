@@ -9,6 +9,7 @@ import { DropIcon } from "@/components/Icons";
 
 const COMMAND_TEXT: Record<string, string> = {
   fire: "Spray now",
+  stop: "Stop spray",
   move: "Move turret",
   home: "Return home",
   set_mode: "Change mode",
@@ -86,13 +87,18 @@ export default function ControlPage() {
             }
           />
         </div>
-        <button
-          className="btn btn-spray"
-          style={{ width: "100%" }}
-          onClick={() => run("Spray sent", () => send("/api/commands", "POST", { type: "fire", durationMs: draft.burstMs }))}
-        >
-          <DropIcon /> Spray now ({draft.burstMs} ms)
-        </button>
+        <div className="btn-row">
+          <button
+            className="btn btn-spray"
+            style={{ flex: 1, whiteSpace: "nowrap" }}
+            onClick={() => run("Spray sent", () => send("/api/commands", "POST", { type: "fire", durationMs: draft.burstMs }))}
+          >
+            <DropIcon /> Spray now ({draft.burstMs} ms)
+          </button>
+          <button className="btn" style={{ whiteSpace: "nowrap" }} onClick={() => run("Stop sent", () => send("/api/commands", "POST", { type: "stop" }))}>
+            Stop spray
+          </button>
+        </div>
       </section>
 
       <section className="card">

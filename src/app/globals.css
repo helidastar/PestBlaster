@@ -304,6 +304,9 @@ main > *:nth-child(n + 7) { animation-delay: 300ms; }
 .fab.holding { transform: scale(0.93); }
 .fab.holding .ring circle { animation: charge var(--hold) linear forwards; }
 .fab.fired { animation: kick 0.5s var(--ease); }
+.fab.spraying { background: var(--heart); color: #17240f; box-shadow: 0 0 0 0 var(--heart); animation: spraying 1s ease-out infinite; }
+.fab.spraying .ring circle { stroke-dashoffset: 0; stroke: var(--spray); }
+@keyframes spraying { from { box-shadow: 0 0 0 0 var(--heart); } to { box-shadow: 0 0 0 14px transparent; } }
 @keyframes charge { to { stroke-dashoffset: 0; } }
 @keyframes kick { 0% { transform: scale(0.9); } 45% { transform: scale(1.1); } 100% { transform: scale(1); } }
 .fab-label {

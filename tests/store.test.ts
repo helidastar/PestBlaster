@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { DatabaseSync } from "node:sqlite";
+import { DatabaseSync } from "node:sqlite";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { DEFAULT_DEVICE_ID, openDb } from "@/lib/db";
 import { decide } from "@/lib/decision";
 import {
@@ -11,6 +14,7 @@ import {
   listFires,
   listPestCaptures,
   queueCommand,
+  queueStop,
   recordFire,
   recordHeartbeat,
   saveCapture,
@@ -92,5 +96,39 @@ describe("store", () => {
     expect(today.counts.armyworm_cutworm).toBe(2);
     expect(today.sprays).toBe(1);
     expect(listFires(db)).toHaveLength(1);
+  });
+
+  it("stop drops a spray the turret has not picked up yet", () => {
+    const fire = queueCommand(db, DEFAULT_DEVICE_ID, "fire", { durationMs: 3000 });
+    queueStop(db, DEFAULT_DEVICE_ID);
+    const sent = takePendingCommands(db, DEFAULT_DEVICE_ID);
+    expect(sent.map((c) => c.type)).toEqual(["stop"]);
+    const row = db.prepare("SELECT status FROM commands WHERE id = ?").get(fire.id) as { status: string };
+    expect(row.status).toBe("failed");
+  });
+
+  it("upgrades a database from the old pest list", () => {
+    const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "pb-")), "old.db");
+    const old = new DatabaseSync(file);
+    old.exec(`
+      CREATE TABLE commands (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, device_id TEXT NOT NULL, created_at TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN ('fire','move','home','set_mode')),
+        payload TEXT NOT NULL DEFAULT '{}',
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','done','failed')),
+        done_at TEXT
+      );
+      INSERT INTO commands (device_id, created_at, type) VALUES ('turret-1', '2026-09-29T00:00:00Z', 'home');
+    `);
+    old.close();
+    const up = openDb(file);
+    const decision = { action: "hold" as const, reason: "auto_fire_off" as const, target: null };
+    const det = { ...larva, pest: "diamondback_larva" } as unknown as Detection;
+    saveCapture(up, { deviceId: DEFAULT_DEVICE_ID, image: null, pose, detections: [det], decision });
+    up.close();
+    const again = openDb(file);
+    expect(listPestCaptures(again, {})[0].detections[0].pest).toBe("armyworm_cutworm");
+    expect(queueStop(again, DEFAULT_DEVICE_ID).type).toBe("stop");
+    expect((again.prepare("SELECT COUNT(*) AS n FROM commands").get() as { n: number }).n).toBe(2);
   });
 });

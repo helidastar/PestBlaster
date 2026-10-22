@@ -451,7 +451,7 @@ erDiagram
         int id PK
         text device_id FK
         text created_at
-        text type "fire | move | home | set_mode"
+        text type "fire | stop | move | home | set_mode"
         text payload "JSON"
         text status "pending | sent | done | failed"
         text done_at
@@ -504,7 +504,7 @@ Firmware loop *(planned)*: heartbeat → run any commands → move to next scan 
 | GET | `/api/stats?days=7` | Pests per type and sprays per day |
 | GET / POST | `/api/alerts` | List alerts / mark all as read |
 | PATCH | `/api/settings` | Change `autoFire`, `mode`, `confidenceThreshold`, `burstMs`, `cooldownS`, `reservoirLowPct` |
-| GET / POST | `/api/commands` | List / queue `{type: "fire", durationMs}`, `{type: "move", pose}`, `{type: "home"}` |
+| GET / POST | `/api/commands` | List / queue `{type: "fire", durationMs}`, `{type: "stop"}`, `{type: "move", pose}`, `{type: "home"}`. Hold to spray sends `fire` with 3000 ms (the pump cap) and `stop` on release; while a manual spray runs, the turret keeps checking in (about every 250 ms) so a `stop` ends it early. A `stop` also cancels any `fire` the turret has not picked up yet. |
 | GET | `/api/snapshots/{file}` | A stored photo |
 
 ### 10.3 Example capture response

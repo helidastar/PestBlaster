@@ -54,7 +54,7 @@ export type Decision =
   | { action: "fire"; target: Detection; aim: Pose; burstMs: number }
   | { action: "hold"; reason: HoldReason; target: Detection | null };
 
-export type CommandType = "fire" | "move" | "home" | "set_mode";
+export type CommandType = "fire" | "stop" | "move" | "home" | "set_mode";
 export type CommandStatus = "pending" | "sent" | "done" | "failed";
 
 export interface Command {
