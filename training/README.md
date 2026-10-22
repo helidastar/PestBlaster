@@ -130,6 +130,22 @@ On the team laptop (or the field-test PC):
 
 The server keeps every detection at 20% confidence or higher; the app's own setting ("Only spray when at least …% sure") decides when to spray. Set that from the threshold the notebook or `evaluate.py` suggests.
 
+### Before our model is trained: a Roboflow-hosted model
+`pest-detection-qbalv/3` on Roboflow can stand in for our model, through the same `/detect` connection, so the app does not change.
+
+1. Get the API key at https://app.roboflow.com/settings/api and keep it out of the repo (an environment variable only; the key is sent in the `Authorization: Bearer` header, never in the URL).
+2. Try one photo. It prints the Roboflow class names and what the app would get:
+   ```bash
+   export ROBOFLOW_API_KEY=...          # Windows PowerShell: $env:ROBOFLOW_API_KEY="..."
+   python training/roboflow_detector.py photo.jpg
+   ```
+3. Serve it, then do steps 3-5 above:
+   ```bash
+   python training/serve.py --roboflow pest-detection-qbalv/3
+   ```
+
+Roboflow class names are mapped to ours in `CLASS_PATTERNS` in `roboflow_detector.py` (looper, armyworm/cutworm, aphid); anything else (for example ladybugs) is dropped. If step 2 shows one of our pests as "dropped", add its name there. It needs internet, so on the Pi it only works with the pocket Wi-Fi router, and each photo takes a round trip to Roboflow. Use it for demos and testing, not for the response-time test.
+
 ## 5. Measure it (testing strategy B.1)
 
 With `serve.py` running:

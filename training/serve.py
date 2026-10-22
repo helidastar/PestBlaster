@@ -1,6 +1,7 @@
 """Model server for the PestBlaster app. The app uses it when DETECTOR=http.
 
     python training/serve.py --model training/models/best.pt           # port 8000
+    python training/serve.py --roboflow pest-detection-qbalv/3          # Roboflow-hosted model (roboflow_detector.py)
     # then in .env.local:  DETECTOR=http  and  DETECTOR_URL=http://localhost:8000/detect
 
 POST /detect   body = raw JPEG/PNG bytes
@@ -101,14 +102,20 @@ def main() -> None:
     ap.add_argument("--min-conf", type=float, default=float(os.environ.get("PB_MIN_CONF", 0.2)))
     ap.add_argument("--host", default="0.0.0.0")
     ap.add_argument("--port", type=int, default=8000)
+    ap.add_argument("--roboflow", metavar="MODEL_ID", help="use a Roboflow-hosted model instead, e.g. pest-detection-qbalv/3 (needs ROBOFLOW_API_KEY and internet)")
     a = ap.parse_args()
-    if not Path(a.model).exists():
-        raise SystemExit(f"Model file {a.model} not found. Download best.pt from the Colab run into training/models/.")
 
     import uvicorn
 
-    predict, info = yolo_predictor(a.model, a.imgsz, a.min_conf)
-    print(f"Serving {a.model} on http://{a.host}:{a.port}/detect")
+    if a.roboflow:
+        from roboflow_detector import roboflow_predictor
+
+        predict, info = roboflow_predictor(a.roboflow, a.min_conf)
+    else:
+        if not Path(a.model).exists():
+            raise SystemExit(f"Model file {a.model} not found. Download best.pt from the Colab run into training/models/.")
+        predict, info = yolo_predictor(a.model, a.imgsz, a.min_conf)
+    print(f"Serving {info['model']} on http://{a.host}:{a.port}/detect")
     uvicorn.run(create_app(predict, info), host=a.host, port=a.port, log_level="warning")
 
 

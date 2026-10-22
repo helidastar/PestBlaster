@@ -8,5 +8,8 @@ ultralytics>=8.3
 fastapi>=0.110
 uvicorn>=0.29
 
+# Roboflow-hosted model (roboflow_detector.py, serve.py --roboflow)
+inference-sdk>=1.5
+
 # Tests
 pytest>=8
