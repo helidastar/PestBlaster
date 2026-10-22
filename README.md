@@ -321,7 +321,8 @@ Hardware tests (detection distance, aim, spray, battery, weather) follow the tes
 - [ ] Spray line, arm and head (50% build, Nov 3-13)
 - [ ] Pest dataset collected and YOLO11n trained (50% build)
 - [ ] Raspberry Pi 5 set up: hotspot, detection server and Wi-Fi link to the ESP32 (50% build)
-- [ ] App updated to the approved design: new pest list, swivel ±90° and tilt, battery level and alert, live view (50% build)
+- [x] App: approved pest list, hold-to-spray with stop, alert pop-ups (22 Oct)
+- [ ] App: patrol schedule, plot setup, swivel ±90° and tilt, battery and E-stop status, response-time logging (50% build); live view (Increment 3). Full list in [DOCUMENTATION.md section 16.5](docs/DOCUMENTATION.md#165-code-vs-the-approved-design)
 - [ ] Every line of the test sheet (sheet 19) filled in with measured values and % error
 - [ ] Field test next to an unprotected control bed
 

@@ -244,8 +244,9 @@ A mobile-first web app. It can be added to the phone's home screen (web app mani
 |--------|----------|
 | **Turret** (home) | Online/offline status · auto-spray on/off · **turret map** (top-down view: arm shows pan angle, rings show height from soil to top, shapes show recent pest sightings, a ripple marks the latest spray) · lift gauge · pan/lift/swivel readout · auto-spray switch · reservoir bottle level · today's counts (spots checked, pests seen, sprays) · latest pest photo with what the turret did |
 | **Pests** | Every photo with a pest, newest first, with detector boxes and confidence · filter by pest · shows whether it was sprayed or why not · pose and leaf top / under leaf |
-| **Control** | Pause / resume turret · **Spray now** · aim by hand (pan, lift, swivel sliders → Move turret, Return home) · spray settings (confidence threshold, spray length, wait between sprays, low-bottle warning) · recent commands with progress |
+| **Control** | Pause / resume turret · **Spray now** and **Stop spray** · aim by hand (pan, lift, swivel sliders → Move turret, Return home) · spray settings (confidence threshold, spray length, wait between sprays, low-bottle warning) · recent commands with progress |
 | **History** | Trends: stacked bars of pests per day for 7 days, with hover details and a table view · Sprays: every spray (auto or manual) with pest and pose · Alerts: pest found, refill needed (unread badge on the tab) |
+| **Every screen** | **Hold to spray** button: hold for 0.7 s to start, spray lasts while held (at most 3 s), releasing sends `stop` · **alert pop-ups** for new pest and refill alerts (checked every 2 s, shown for 8 s, tap to open History) |
 
 Design priorities: readable outdoors on a phone, large touch targets, plain language ("Spray now", not "Trigger actuator"), and every hold reason spelled out so the grower knows why it did not spray.
 
@@ -785,7 +786,7 @@ The (for approval) documents and blueprint v15 disagree on these points. Pick on
 | 9 | Node.js on the Pi | — | Node 20 (sheet 34); the app needs Node 22.13+ for its built-in SQLite |
 
 ### 16.5 Code vs the approved design
-The Increment 1 code was written before these changes. Work items for the app (`src/`):
+The Increment 1 code was written before these changes. Work items for the app (`src/`), checked against the accepted Approval Sheet, the Thesis chapter and blueprint v15 (22 Oct 2026):
 
 | Area | Code today | Approved design |
 |------|-----------|-----------------|
@@ -793,8 +794,17 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Head | One swivel axis, −170° to +170° (`src/lib/targeting.ts`) | Swivel ±90° plus tilt |
 | Scan | 72 photos: 12 pans × 3 heights × 2 angles incl. under-leaf (`src/lib/scan.ts`) | Stops over the two boxes only; see 16.4 #5 |
 | Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
+| Manual spray | Done: hold to spray, release or **Stop spray** sends `stop` (Approval Sheet test 10) | Trigger and stop a manual spray |
+| Alerts | Done: pop-up within about 2 s of a new alert (Approval Sheet test 9) | Alerts arrive within 10 s |
+| Patrol schedule | Not in the app; the simulator scans non-stop | Day / dusk / night schedule set in the app, manual "Start patrol" (section 6.8, Thesis chapter Table 1.3) |
+| Plot setup | None | Mark which stops face the planter boxes so the rest are skipped (blueprint v15, sheet 45) |
 | Battery | Not tracked | Battery level in the app and low-battery alert (INA219) |
-| Live view | None | Live camera view, scanning pauses while open *(planned)* |
+| Abnormal current | Not tracked | Flag a jammed motor or actuator from the INA219 current (Thesis chapter) |
+| Emergency stop | Not shown | Show when the hardware E-stop is pressed; the turret stays stopped until it is released (Approval Sheet test 4) |
+| Live view | None | Live camera view, scanning pauses while open *(planned, Increment 3)* |
+| Response time | Only capture and spray times are stored | Report software latency (capture, upload, detection, command) and mechanical latency (moving) separately (Approval Sheet test 11) |
+| Night patrols | Photos are not marked day or night | Mark IR photos so day and night accuracy can be compared (Approval Sheet test 7) |
+| Pest wording | "Aphid colony" | Thesis chapter Objective 1 and Definition of Terms say "aphid clusters"; the Approval Sheet and Table 1.2 say "colonies". Pick one |
 | Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.9 to the firmware |
 
 ---
