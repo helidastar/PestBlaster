@@ -18,3 +18,4 @@ training/models/
 training/sources.yaml
 __pycache__/
 .pytest_cache/
+.venv/
