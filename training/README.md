@@ -144,7 +144,7 @@ The server keeps every detection at 20% confidence or higher; the app's own sett
    python training/serve.py --roboflow pest-detection-qbalv/3
    ```
 
-Roboflow class names are mapped to ours in `CLASS_PATTERNS` in `roboflow_detector.py` (looper, armyworm/cutworm, aphid); anything else (for example ladybugs) is dropped. If step 2 shows one of our pests as "dropped", add its name there. It needs internet, so on the Pi it only works with the pocket Wi-Fi router, and each photo takes a round trip to Roboflow. Use it for demos and testing, not for the response-time test.
+This model has 19 general classes (Aphid, Caterpillar, Moth, Beetle, Ant, …). Aphid counts as aphid colony and Caterpillar as armyworm/cutworm, because it cannot tell a looper from an armyworm. Roboflow class names are mapped to ours in `CLASS_PATTERNS` in `roboflow_detector.py` (looper, armyworm/cutworm, aphid); anything else (for example ladybugs) is dropped. If step 2 shows one of our pests as "dropped", add its name there. It needs internet, so on the Pi it only works with the pocket Wi-Fi router, and each photo takes a round trip to Roboflow. Use it for demos and testing, not for the response-time test.
 
 ## 5. Measure it (testing strategy B.1)
 

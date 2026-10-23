@@ -33,6 +33,9 @@ API_URL = "https://serverless.roboflow.com"
 CLASS_PATTERNS: list[tuple[str, str]] = [
     (r"looper|trichoplusia", "looper"),
     (r"army ?worm|cut ?worm|spodoptera|agrotis", "armyworm_cutworm"),
+    # pest-detection-qbalv/3 has one generic "Caterpillar" class and cannot tell a looper
+    # from an armyworm, so its caterpillars count as armyworm/cutworm.
+    (r"caterpillar|larva", "armyworm_cutworm"),
     (r"aphid", "aphid_colony"),
 ]
 

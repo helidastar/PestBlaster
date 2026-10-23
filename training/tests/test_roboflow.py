@@ -30,6 +30,8 @@ def test_maps_roboflow_names_to_our_classes():
     assert map_class("fall_armyworm") == "armyworm_cutworm"
     assert map_class("Black Cutworm") == "armyworm_cutworm"
     assert map_class("Aphids") == "aphid_colony"
+    assert map_class("Caterpillar") == "armyworm_cutworm"
+    assert map_class("Moth") is None
     assert map_class("ladybug") is None
 
 
