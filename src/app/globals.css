@@ -705,56 +705,6 @@ a.card-note:hover { text-decoration: underline; }
 .scope-live.idle i { background: var(--scope-dim); animation: none; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
-.radar-wrap {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 40px;
-  gap: 10px;
-  align-items: stretch;
-}
-/* square scope, but never taller than the screen leaves room for (desktop, landscape) */
-.radar {
-  width: min(100%, max(220px, calc(100svh - var(--scope-chrome, 330px))));
-  height: auto;
-  aspect-ratio: 1;
-  display: block;
-  justify-self: center;
-  overflow: visible;
-}
-.radar .ring { fill: none; stroke: var(--scope-line); stroke-width: 1; }
-.radar .ring.outer { stroke: rgb(228 240 210 / 0.28); stroke-dasharray: 2 4; }
-.radar .ring-label { fill: var(--scope-dim); font-family: var(--font-mono); font-size: 8.5px; letter-spacing: 0.05em; }
-.radar .tick { stroke: var(--scope-line); stroke-width: 1; }
-.radar .compass { fill: var(--scope-dim); font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; }
-.radar .gaze { transition: transform 1s var(--ease); transform-origin: 150px 150px; }
-.radar .beam { fill: var(--heart); }
-.radar .arm { stroke: var(--heart); stroke-width: 2; transition: transform 1s var(--ease); transform-origin: 150px 150px; }
-.radar .nozzle { transition: transform 1s var(--ease); }
-.radar .nozzle circle:first-child { fill: var(--scope); stroke: var(--heart); stroke-width: 3; }
-.radar .nozzle circle:last-child { fill: var(--heart); }
-.radar .hub { fill: var(--scope-ink); }
-.radar .hub-ring { fill: none; stroke: var(--scope-ink); stroke-width: 1.5; opacity: 0.4; }
-.radar .ripple { fill: none; stroke: #7fd6e6; stroke-width: 2.5; animation: ripple 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-.radar .ripple.two { animation-delay: 0.5s; }
-.radar .pest { stroke: var(--scope); stroke-width: 2; }
-.radar .blip { animation: blip-in 0.6s var(--ease) both; transform-box: fill-box; transform-origin: center; }
-.radar .blip.fresh .halo { animation: halo 1.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes ripple { from { transform: scale(0.4); opacity: 0.9; } to { transform: scale(2.6); opacity: 0; } }
-@keyframes blip-in { from { transform: scale(0); opacity: 0; } }
-@keyframes halo { from { transform: scale(0.6); opacity: 0.7; } to { transform: scale(2.2); opacity: 0; } }
-
-.lift-gauge { display: grid; grid-template-rows: auto 1fr auto; justify-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--scope-dim); padding: 8% 0; }
-.lift-track { position: relative; width: 6px; border-radius: 3px; background: var(--scope-line); }
-.lift-carriage {
-  position: absolute;
-  left: -9px;
-  right: -9px;
-  height: 10px;
-  border-radius: 5px;
-  background: var(--heart);
-  box-shadow: 0 0 12px rgb(198 228 106 / 0.5);
-  transition: bottom 1s var(--ease);
-}
-
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-2); margin-top: 10px; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .scope .legend { color: var(--scope-dim); justify-content: center; margin-top: 4px; }
@@ -786,6 +736,14 @@ a.card-note:hover { text-decoration: underline; }
 .wave.back { animation-duration: 5s; animation-direction: reverse; opacity: 0.45; }
 @keyframes wave { from { transform: translateX(0); } to { transform: translateX(-48px); } }
 
+/* ---------- camera view on the home screen ---------- */
+
+.camera .snap { border-radius: 14px; aspect-ratio: 4 / 3; background: #10140f; }
+.camera .snap img { object-fit: cover; }
+.camera-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 6px 12px; flex-wrap: wrap; margin-top: 10px; font-size: 14px; font-weight: 600; }
+.camera-foot .mono { font-family: var(--font-mono); font-size: 11px; color: var(--scope-dim); font-weight: 500; }
+.camera-empty { aspect-ratio: 4 / 3; display: grid; place-items: center; text-align: center; padding: 20px; border-radius: 14px; border: 1px dashed var(--scope-line); color: var(--scope-dim); }
+
 /* ---------- snapshots ---------- */
 
 .snap { position: relative; border-radius: 16px 6px 16px 6px; overflow: hidden; background: var(--surface-2); aspect-ratio: 4 / 3; }
@@ -811,6 +769,9 @@ a.card-note:hover { text-decoration: underline; }
   border-radius: 4px;
   white-space: nowrap;
 }
+.snap .box.label-in span { bottom: auto; top: 0; margin: 0; border-radius: 0 0 4px 0; left: 0; }
+.snap .box.label-r span { left: auto; right: -2px; }
+.snap .box.label-in.label-r span { right: 0; border-radius: 0 0 0 4px; }
 @keyframes lock { from { transform: scale(1.35); opacity: 0; } }
 
 .latest { display: grid; gap: 14px; }

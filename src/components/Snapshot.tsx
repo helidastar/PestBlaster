@@ -1,8 +1,8 @@
 import { PESTS } from "@/lib/pests";
-import type { CaptureRecord } from "@/lib/types";
+import type { Detection } from "@/lib/types";
 
-/** Camera snapshot with the detector's boxes drawn on top. */
-export function Snapshot({ capture }: { capture: CaptureRecord }) {
+/** Camera snapshot with the detector's boxes drawn on top, each labelled with the pest and how sure it is. */
+export function Snapshot({ capture }: { capture: { image: string | null; detections: Detection[] } }) {
   const alt = `Snapshot with ${capture.detections.map((d) => PESTS[d.pest].label).join(", ") || "no pests"}`;
   return (
     <div className="snap">
@@ -12,10 +12,10 @@ export function Snapshot({ capture }: { capture: CaptureRecord }) {
       ) : (
         <div className="empty">No snapshot saved</div>
       )}
-      {capture.detections.map((d) => (
+      {capture.detections.map((d, i) => (
         <div
-          key={d.id}
-          className="box"
+          key={`${capture.image}-${i}`}
+          className={`box${d.bbox.y < 0.08 ? " label-in" : ""}${d.bbox.x + d.bbox.w > 0.7 ? " label-r" : ""}`}
           style={{
             left: `${d.bbox.x * 100}%`,
             top: `${d.bbox.y * 100}%`,
@@ -24,7 +24,9 @@ export function Snapshot({ capture }: { capture: CaptureRecord }) {
             ["--c" as string]: PESTS[d.pest].color,
           }}
         >
-          <span>{Math.round(d.confidence * 100)}%</span>
+          <span>
+            {PESTS[d.pest].label} {Math.round(d.confidence * 100)}%
+          </span>
         </div>
       ))}
     </div>

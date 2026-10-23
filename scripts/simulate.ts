@@ -1,7 +1,7 @@
 /**
  * Turret simulator: plays the part of the ESP32 so the whole software loop can be
  * tested before the hardware is built. It follows the real scan path, "photographs"
- * a synthetic lettuce leaf (sometimes with pests on it), sends it to the backend,
+ * a synthetic top-down view of the lettuce bed (sometimes with pests on it), sends it to the backend,
  * aims and sprays when told to, uses up deterrent, and obeys manual commands.
  *
  *   npm run simulate                       # runs until Ctrl+C
@@ -71,24 +71,54 @@ const postJson = <T>(path: string, body: unknown) =>
 
 // ---------- synthetic scene ----------
 
+/** Same stop, same plants: the bed layout is seeded from where the camera points. */
+function seeded(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+interface Head { x: number; y: number; r: number; turn: number }
+
+/** Lettuce heads in view, top down: three rows on the bed, shifted as the turret turns. */
+function bedHeads(p: Pose): Head[] {
+  const rand = seeded(Math.round(p.pan) * 7919 + Math.round(p.lift));
+  const heads: Head[] = [];
+  const shift = ((p.pan % 30) / 30) * 120;
+  for (let row = 0; row < 3; row++) {
+    const y = 95 + row * 150 + (rand() - 0.5) * 16;
+    for (let col = -1; col < 6; col++) {
+      const x = col * 125 + 60 - shift + (row % 2) * 40 + (rand() - 0.5) * 18;
+      if (x < -60 || x > 700) continue;
+      heads.push({ x, y, r: 50 + rand() * 14, turn: rand() * Math.PI });
+    }
+  }
+  return heads;
+}
+
 function randomPests(p: Pose): Detection[] {
   if (Math.random() >= PEST_RATE) return [];
-  const underside = p.swivel > 90;
-  const count = Math.random() < 0.2 ? 2 : 1;
+  const heads = bedHeads(p).filter((h) => h.x > 70 && h.x < 570);
+  const count = Math.random() < 0.25 ? 2 : 1;
   const out: Detection[] = [];
-  for (let i = 0; i < count; i++) {
-    // Aphids gather under leaves; larvae and loopers are more often on top.
-    const pest: PestType = underside
-      ? Math.random() < 0.6 ? "aphid_colony" : PEST_TYPES[Math.floor(Math.random() * 2)]
-      : PEST_TYPES[Math.floor(Math.random() * 3)];
-    const size = { armyworm_cutworm: [0.12, 0.05], looper: [0.13, 0.07], aphid_colony: [0.15, 0.12] }[pest];
-    const base = { armyworm_cutworm: 0.84, looper: 0.7, aphid_colony: 0.82 }[pest];
+  for (let i = 0; i < count && heads.length > 0; i++) {
+    // Each pest sits on a different lettuce head.
+    const head = heads.splice(Math.floor(Math.random() * heads.length), 1)[0];
+    const pest: PestType = PEST_TYPES[Math.floor(Math.random() * 3)];
+    const size = { armyworm_cutworm: [0.12, 0.06], looper: [0.11, 0.07], aphid_colony: [0.13, 0.12] }[pest];
+    const base = { armyworm_cutworm: 0.84, looper: 0.72, aphid_colony: 0.8 }[pest];
+    const cx = (head.x + (Math.random() - 0.5) * head.r * 0.6) / 640;
+    const cy = (head.y + (Math.random() - 0.5) * head.r * 0.6) / 480;
     out.push({
       pest,
-      confidence: base - (underside ? 0.08 : 0),
+      confidence: base,
       bbox: {
-        x: round3(0.08 + Math.random() * (0.84 - size[0])),
-        y: round3(0.1 + Math.random() * (0.8 - size[1])),
+        x: round3(clamp01(cx - size[0] / 2, 1 - size[0])),
+        y: round3(clamp01(cy - size[1] / 2, 1 - size[1])),
         w: size[0],
         h: size[1],
       },
@@ -97,44 +127,70 @@ function randomPests(p: Pose): Detection[] {
   return out;
 }
 
+const clamp01 = (n: number, max: number) => Math.min(max, Math.max(0, n));
+
 function drawPest(d: Detection): string {
   const W = 640, H = 480;
   const x = d.bbox.x * W, y = d.bbox.y * H, w = d.bbox.w * W, h = d.bbox.h * H;
   const cx = x + w / 2, cy = y + h / 2;
   if (d.pest === "armyworm_cutworm") {
-    const segs = Array.from({ length: 5 }, (_, i) =>
-      `<ellipse cx="${x + (i + 0.5) * (w / 5)}" cy="${cy}" rx="${w / 9}" ry="${h / 2.4}" fill="#8c7a4e" stroke="#4d4026" stroke-width="1"/>`,
+    const segs = Array.from({ length: 6 }, (_, i) =>
+      `<ellipse cx="${x + (i + 0.5) * (w / 6)}" cy="${cy}" rx="${w / 10}" ry="${h / 3}" fill="#7b6a45" stroke="#3f3420" stroke-width="1"/>`,
     ).join("");
-    const stripe = `<line x1="${x + 2}" y1="${cy + h / 5}" x2="${x + w - 4}" y2="${cy + h / 5}" stroke="#2f2716" stroke-width="1.5"/>`;
-    return `<g>${segs}${stripe}<circle cx="${x + w - 3}" cy="${cy}" r="${h / 4}" fill="#3a2f1c"/></g>`;
+    const stripe = `<line x1="${x + 3}" y1="${cy + h / 6}" x2="${x + w - 6}" y2="${cy + h / 6}" stroke="#2a2214" stroke-width="2"/>`;
+    return `<g>${segs}${stripe}<circle cx="${x + w - 4}" cy="${cy}" r="${h / 3.4}" fill="#2f2617"/></g>`;
   }
   if (d.pest === "looper") {
-    return `<path d="M ${x} ${y + h} Q ${cx} ${y - h * 0.6} ${x + w} ${y + h}" fill="none" stroke="#8fc56a" stroke-width="${h / 2.2}" stroke-linecap="round"/>
-      <path d="M ${x} ${y + h} Q ${cx} ${y - h * 0.6} ${x + w} ${y + h}" fill="none" stroke="#dff0c4" stroke-width="1.5" stroke-dasharray="3 5"/>`;
+    return `<path d="M ${x + 4} ${y + h - 4} Q ${cx} ${y - h * 0.5} ${x + w - 4} ${y + h - 4}" fill="none" stroke="#b8e07a" stroke-width="${h / 3}" stroke-linecap="round"/>
+      <path d="M ${x + 4} ${y + h - 4} Q ${cx} ${y - h * 0.5} ${x + w - 4} ${y + h - 4}" fill="none" stroke="#f1fbd9" stroke-width="1.5" stroke-dasharray="3 5"/>`;
   }
-  const dots = Array.from({ length: 22 }, () => {
-    const dx = cx + (Math.random() - 0.5) * w * 0.9, dy = cy + (Math.random() - 0.5) * h * 0.9;
-    return `<ellipse cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" rx="3.2" ry="2.3" fill="#9bc34f" stroke="#55732a" stroke-width="0.8"/>`;
+  const dots = Array.from({ length: 26 }, () => {
+    const dx = cx + (Math.random() - 0.5) * w * 0.85, dy = cy + (Math.random() - 0.5) * h * 0.85;
+    return `<ellipse cx="${dx.toFixed(1)}" cy="${dy.toFixed(1)}" rx="3.4" ry="2.4" fill="#e7f0a0" stroke="#5c6e1f" stroke-width="0.9"/>`;
   }).join("");
   return `<g>${dots}</g>`;
 }
 
-function renderLeaf(p: Pose, pests: Detection[]): string {
-  const underside = p.swivel > 90;
-  const leaf = underside ? "#8fb86a" : "#6fae45";
-  const vein = underside ? "#cfe3b4" : "#a9d27f";
-  const veins = Array.from({ length: 7 }, (_, i) => {
-    const y = 70 + i * 55;
-    return `<path d="M 320 ${y + 30} Q ${220 - i * 6} ${y} 90 ${y - 25}" stroke="${vein}" stroke-width="3" fill="none"/>
-      <path d="M 320 ${y + 30} Q ${420 + i * 6} ${y} 550 ${y - 25}" stroke="${vein}" stroke-width="3" fill="none"/>`;
+/** One ruffled lettuce head seen from above: a ring of crinkled outer leaves around a pale heart. */
+function drawHead(h: Head): string {
+  const leafRing = (count: number, dist: number, rx: number, ry: number, fill: string, edge: string, phase: number) =>
+    Array.from({ length: count }, (_, i) => {
+      const a = h.turn + phase + (i / count) * Math.PI * 2;
+      const cx = h.x + Math.cos(a) * h.r * dist, cy = h.y + Math.sin(a) * h.r * dist;
+      const deg = (a * 180) / Math.PI;
+      return `<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(h.r * rx).toFixed(1)}" ry="${(h.r * ry).toFixed(1)}" transform="rotate(${deg.toFixed(0)} ${cx.toFixed(1)} ${cy.toFixed(1)})" fill="${fill}" stroke="${edge}" stroke-width="2"/>`;
+    }).join("");
+  const ribs = Array.from({ length: 9 }, (_, i) => {
+    const a = h.turn + (i / 9) * Math.PI * 2;
+    return `<line x1="${h.x}" y1="${h.y}" x2="${(h.x + Math.cos(a) * h.r * 0.9).toFixed(1)}" y2="${(h.y + Math.sin(a) * h.r * 0.9).toFixed(1)}" stroke="#e4f6b6" stroke-width="1.6" opacity="0.5"/>`;
   }).join("");
+  return `<g>
+    <circle cx="${h.x + 5}" cy="${h.y + 8}" r="${h.r * 1.02}" fill="#000" opacity="0.4"/>
+    ${leafRing(11, 0.62, 0.42, 0.3, "#5aa632", "#3f7f22", 0)}
+    ${leafRing(9, 0.42, 0.36, 0.27, "#7cc444", "#5aa632", 0.3)}
+    ${ribs}
+    ${leafRing(7, 0.22, 0.26, 0.2, "#a6dd5f", "#86c64a", 0.6)}
+    <circle cx="${h.x}" cy="${h.y}" r="${h.r * 0.17}" fill="#d9f293"/>
+  </g>`;
+}
+
+/** A top-down camera frame of the lettuce bed, with any pests drawn on the heads. */
+function renderBed(p: Pose, pests: Detection[]): string {
+  const rand = seeded(Math.round(p.pan) * 131 + 7);
+  const soil = Array.from({ length: 160 }, () =>
+    `<circle cx="${(rand() * 640).toFixed(0)}" cy="${(rand() * 480).toFixed(0)}" r="${(1 + rand() * 2.5).toFixed(1)}" fill="${rand() < 0.5 ? "#5a4330" : "#2e231a"}" opacity="0.7"/>`,
+  ).join("");
+  const mulch = [95, 245, 395].map((y) => `<rect x="0" y="${y - 52}" width="640" height="104" fill="#1c1d1b"/>`).join("");
+  const stamp = `CAM 1 · BED A · pan ${p.pan.toFixed(0)}° · lift ${p.lift.toFixed(0)} mm`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
-  <rect width="640" height="480" fill="#3b2f22"/>
-  <path d="M 320 470 C 20 420 -10 120 120 30 C 220 -10 420 -10 520 30 C 650 120 620 420 320 470 Z" fill="${leaf}"/>
-  <path d="M 320 470 L 320 20" stroke="${vein}" stroke-width="7"/>
-  ${veins}
+  <rect width="640" height="480" fill="#4a3727"/>
+  ${soil}
+  ${mulch}
+  ${bedHeads(p).map(drawHead).join("\n  ")}
   ${pests.map(drawPest).join("\n  ")}
-  <text x="12" y="468" font-family="monospace" font-size="13" fill="#f2f6e9" opacity="0.8">${underside ? "UNDER LEAF" : "LEAF TOP"} · ${fmtPose(p)}</text>
+  <rect width="640" height="480" fill="url(#v)"/>
+  <defs><radialGradient id="v" cx="50%" cy="50%" r="75%"><stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity="0.45"/></radialGradient></defs>
+  <text x="12" y="468" font-family="monospace" font-size="13" fill="#f2f6e9" opacity="0.85">${stamp}</text>
 </svg>`;
 }
 
@@ -208,7 +264,7 @@ async function capture(): Promise<void> {
     form.set("image", new Blob([fs.readFileSync(file)], { type }), path.basename(file));
   } else {
     truth = randomPests(pose);
-    form.set("image", new Blob([renderLeaf(pose, truth)], { type: "image/svg+xml" }), "snap.svg");
+    form.set("image", new Blob([renderBed(pose, truth)], { type: "image/svg+xml" }), "snap.svg");
     form.set("simTruth", JSON.stringify(truth));
   }
   form.set("pose", JSON.stringify(pose));

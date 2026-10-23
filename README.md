@@ -186,7 +186,7 @@ PestBlaster/
 ├── model/               # Pest dataset notes, training scripts, training log. (Software)
 ├── src/                 # App + API (Next.js) at the repo root (see docs/APP.md). (Software)
 │   ├── app/             # Pages: Turret, Pests, Control, History; api/ route handlers.
-│   ├── components/      # Radar, Reservoir, Snapshot, TrendChart, Nav.
+│   ├── components/      # Reservoir, Snapshot, TrendChart, Nav.
 │   └── lib/             # Fire rule, aiming, scan path, detector, SQLite store.
 ├── scripts/             # Turret simulator, reset-data.
 ├── tests/               # Vitest unit tests.

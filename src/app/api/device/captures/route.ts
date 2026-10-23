@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
 import { BadRequest, authDevice, handle, parsePose } from "@/lib/api";
+import { saveLiveFrame } from "@/lib/camera";
 import { dataDir, getDb } from "@/lib/db";
 import { decide } from "@/lib/decision";
 import { getDetector } from "@/lib/detector";
@@ -58,6 +59,13 @@ export const POST = handle(async (req: Request) => {
     file = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     fs.writeFileSync(path.join(dir, file), bytes);
   }
+
+  saveLiveFrame(bytes, ext, {
+    pose,
+    detections,
+    decision: decision.action,
+    holdReason: decision.action === "hold" ? decision.reason : null,
+  });
 
   const captureId = saveCapture(db, { deviceId: auth.deviceId, image: file, pose, detections, decision });
   return NextResponse.json({ captureId, detections, decision });

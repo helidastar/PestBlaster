@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { handle } from "@/lib/api";
+import { readLiveFrame } from "@/lib/camera";
 import { DEFAULT_DEVICE_ID, getDb } from "@/lib/db";
 import { getDetector } from "@/lib/detector";
 import {
   getDevice,
   isOnline,
   listCommands,
-  listFires,
   listPestCaptures,
   todaySummary,
   unreadAlertCount,
@@ -24,9 +24,8 @@ export const GET = handle(async () => {
     detector: getDetector().name,
     today: todaySummary(db),
     unreadAlerts: unreadAlertCount(db),
+    camera: readLiveFrame(),
     latestCapture: listPestCaptures(db, { limit: 1 })[0] ?? null,
-    recentPests: listPestCaptures(db, { limit: 12 }),
-    lastFire: listFires(db, { limit: 1 })[0] ?? null,
     commands: listCommands(db, 5),
   });
 });

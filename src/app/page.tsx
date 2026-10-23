@@ -8,7 +8,6 @@ import { send, timeAgo, usePoll } from "@/lib/client";
 import type { StatusResponse } from "@/lib/view-types";
 import { ArrowIcon } from "@/components/Icons";
 import { PestLabel } from "@/components/PestMark";
-import { Radar } from "@/components/Radar";
 import { Reservoir } from "@/components/Reservoir";
 import { Snapshot } from "@/components/Snapshot";
 
@@ -27,7 +26,7 @@ export default function Home() {
     );
   }
 
-  const { device, online, today, latestCapture } = data;
+  const { device, online, today, latestCapture, camera } = data;
   const autoOn = device.settings.autoFire && device.mode === "auto";
 
   async function toggleAuto() {
@@ -62,14 +61,37 @@ export default function Home() {
         {data.detector === "simulated" && <span className="pill">Simulated detector</span>}
       </div>
 
-      <section className="scope" aria-labelledby="radar-title">
+      <section className="scope" aria-labelledby="camera-title">
         <div className="card-head">
-          <h2 className="card-title" id="radar-title">Where it&apos;s looking</h2>
+          <h2 className="card-title" id="camera-title">What it sees</h2>
           <span className={`scope-live${online ? "" : " idle"}`}>
             <i /> {online ? "LIVE" : "LAST KNOWN"}
           </span>
         </div>
-        <Radar pose={device.pose} pests={data.recentPests} lastFire={data.lastFire} />
+        {camera ? (
+          <>
+            <div className="camera">
+              <Snapshot capture={camera} />
+            </div>
+            <div className="camera-foot">
+              <span>
+                {camera.detections.length === 0
+                  ? "No pest in this view"
+                  : [...new Set(camera.detections.map((d) => d.pest))]
+                      .map((pest) => {
+                        const n = camera.detections.filter((d) => d.pest === pest).length;
+                        return n > 1 ? `${PESTS[pest].label} ×${n}` : PESTS[pest].label;
+                      })
+                      .join(", ")}
+              </span>
+              <span className="mono">
+                pan {Math.round(camera.pose.pan)}° · lift {Math.round(camera.pose.lift)} mm · {timeAgo(camera.createdAt)}
+              </span>
+            </div>
+          </>
+        ) : (
+          <div className="camera-empty">Waiting for the first camera photo of the bed.</div>
+        )}
       </section>
 
       <div className="dash-side">

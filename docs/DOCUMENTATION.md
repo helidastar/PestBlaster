@@ -445,7 +445,7 @@ The three pest colors were checked with a colorblind-safety validator in both li
 - Respects dark mode and reduced-motion settings; visible keyboard focus.
 
 ### 8.3 Reusable components
-`Radar` (turret map), `Reservoir` (bottle level), `Snapshot` (photo + detection boxes), `PestShape` / `PestLabel`, `TrendChart`, `Nav`.
+`Reservoir` (bottle level), `Snapshot` (photo + labelled detection boxes, also the home camera view), `PestShape` / `PestLabel`, `TrendChart`, `Nav`.
 
 ---
 
@@ -621,7 +621,7 @@ src/
     manifest.ts           add-to-home-screen
     globals.css           design tokens + all styles
     api/                  route handlers (section 10)
-  components/             Radar, Reservoir, Snapshot, PestMark, TrendChart, Nav, Icons
+  components/             Reservoir, Snapshot, PestMark, TrendChart, Nav, Icons
   lib/
     client.ts             usePoll hook, fetch helper, time formatting
     view-types.ts         response shapes used by pages

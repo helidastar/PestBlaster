@@ -1,5 +1,6 @@
+import type { LiveFrame } from "./camera";
 import type { DayStat } from "./store";
-import type { CaptureRecord, Command, DeviceState, FireEvent } from "./types";
+import type { CaptureRecord, Command, DeviceState } from "./types";
 
 export type { DayStat };
 
@@ -11,7 +12,6 @@ export interface StatusResponse {
   today: { day: string; scans: number; pests: number; sprays: number; byPest: Record<string, number> };
   unreadAlerts: number;
   latestCapture: CaptureRecord | null;
-  recentPests: CaptureRecord[];
-  lastFire: FireEvent | null;
+  camera: LiveFrame | null;
   commands: Command[];
 }

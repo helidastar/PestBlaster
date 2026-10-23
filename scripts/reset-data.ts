@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const dir = path.resolve(process.env.PESTBLASTER_DATA_DIR ?? "./data");
-for (const name of ["pestblaster.db", "pestblaster.db-wal", "pestblaster.db-shm", "snapshots"]) {
+for (const name of ["pestblaster.db", "pestblaster.db-wal", "pestblaster.db-shm", "snapshots", "live.json"]) {
   fs.rmSync(path.join(dir, name), { recursive: true, force: true });
 }
 console.log(`Cleared PestBlaster data in ${dir}`);
