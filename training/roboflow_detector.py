@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import CLASSES  # noqa: E402
@@ -93,7 +93,14 @@ def main(argv: list[str] | None = None) -> int:
 
     from serve import to_detections
 
-    result = make_client().infer(a.image, model_id=a.model)
+    image = a.image
+    if not image.startswith(("http://", "https://")):
+        path = Path(image.strip().strip('"'))
+        if not path.is_file():
+            raise SystemExit(f"Photo not found: {path}. Drag a real photo into the terminal to paste its path.")
+        image = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+
+    result = make_client().infer(image, model_id=a.model)
     names = sorted({str(p.get("class")) for p in result.get("predictions", [])})
     print("Roboflow classes in this photo:", ", ".join(f"{n} -> {map_class(n) or 'dropped'}" for n in names) or "none")
     print(json.dumps({"detections": to_detections(to_rows(result, a.min_conf))}, indent=2))
