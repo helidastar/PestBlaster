@@ -13,6 +13,25 @@
 #              drops, holes without a pest). They teach the model when not to spray.
 
 sources:
+  # Roboflow Universe leo-bvosh/pest-s0hhq v1 (IP102 photos, 102 classes), YOLOv8 export,
+  # unzipped to training/raw/pest-s0hhq/. It has no looper class: get loopers elsewhere.
+  pest-s0hhq:
+    map:
+      army worm: armyworm_cutworm
+      cabbage army worm: armyworm_cutworm
+      beet army worm: armyworm_cutworm
+      prodenia litura: armyworm_cutworm   # = Spodoptera litura
+      black cutworm: armyworm_cutworm
+      yellow cutworm: armyworm_cutworm
+      large cutworm: armyworm_cutworm
+      aphids: aphid_colony
+      english grain aphid: aphid_colony
+      bird cherry-oataphid: aphid_colony
+      green bug: aphid_colony             # greenbug, a cereal aphid
+      toxoptera aurantii: aphid_colony
+      toxoptera citricidus: aphid_colony
+      aphis citricola vander goot: aphid_colony
+
   roboflow-aphids:
     map:
       aphid: aphid_colony
