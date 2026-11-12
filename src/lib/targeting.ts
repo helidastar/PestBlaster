@@ -8,10 +8,13 @@ export const LIMITS = {
   swivelMax: 170,
 } as const;
 
-/** Camera field of view. OV5640 standard lens is roughly 68° × 52°. */
+/**
+ * Camera field of view: blueprint v15 sheet 18 estimate for the OV5640 at 640 × 480,
+ * HFOV = 2·atan(0.8·tan 36°) = 60.3°, VFOV 47.1°. Replace with the measured lens angles (test sheet 19).
+ */
 export const CAMERA = {
-  hfovDeg: 68,
-  vfovDeg: 52,
+  hfovDeg: 60.3,
+  vfovDeg: 47.1,
   /** Expected camera-to-leaf distance when the hanging mount is close to a plant (10–20 cm). */
   workingDistanceMm: 150,
 } as const;

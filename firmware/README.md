@@ -86,7 +86,7 @@ The unit tests check the maths and messages (angles, aim, patrol order, the 1.57
 |---|---|---|
 | F1 | The firmware has not run on the ESP32 yet. Only the laptop checks above have run. | Build in the Arduino IDE, then run it with the turret lifted off the plants. |
 | F2 | Every **MEASURE** line in `config.h`: actuator direction, stepper direction, servo centre and tilt pulses, lift speed, turn acceleration. | Measure in the bring-up test and on test sheet 19. |
-| F3 | The app's camera angles (`src/lib/targeting.ts`: 68° × 52°) are not the blueprint's (60.3° × 47.1°, sheet 18). The aim then overshoots by about 15 % (tan 34° / tan 30.15° = 1.16). The confirm photo catches most of it. | Change the app to the measured lens angles (an app change, not firmware). |
+| F3 | The app's camera angles now match the blueprint estimate (60.3° × 47.1°, sheet 18) but are not measured. | Measure the lens (test sheet 19) and change `CAMERA` in `src/lib/targeting.ts`. |
 | F4 | The coarse turn happens **before** the pump starts, not after the "aim" reply as sheet 36 draws it, so that a 2.2 s turn does not use up the 3 s pump cap. Detect → spray time is the same. | Team to confirm. |
 | F5 | The app has no patrol schedule, plot setup, night mode or damage spray yet (sheets 43-45). The firmware patrols all 12 stops in Auto mode with a 60 s rest, day mode only. | Add to the app first; then the firmware reads them. |
 | F6 | The app does not show battery, E-stop or faults yet; the firmware already sends them in `status`. | App change. |

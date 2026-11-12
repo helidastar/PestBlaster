@@ -277,7 +277,7 @@ One sweep = 12 pan stops (every 30°) × 3 heights (300, 150, 0 mm) × 2 camera 
 Approved design: scan at set stops over the two planter boxes only, at three heights (top, middle, soil level). Blueprint v15 instead patrols 12 stops 30° apart with the lift down and 4 frames per stop (swivel ±30° × tilt 35°/75°). See section 16.4.
 
 ### 6.4 Aiming
-The detector returns a box in image coordinates (0–1). The server converts the box center into angle corrections using the camera's field of view (OV5640 ≈ 68° × 52°, pinhole model). Blueprint v15 uses 60.3° × 47.1° (datasheet estimate, sheet 18); measure the real lens before the aim calibration:
+The detector returns a box in image coordinates (0–1). The server converts the box center into angle corrections using the camera's field of view (60.3° × 47.1°, blueprint v15 sheet 18 datasheet estimate, pinhole model); measure the real lens before the aim calibration:
 
 - Box right of center → **pan** right; box below center → **swivel** down.
 - If the swivel would pass ±170°, the remaining angle is covered by moving the **lift** instead (using the ~150 mm working distance).
@@ -792,7 +792,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Pest classes | Done: `looper`, `armyworm_cutworm`, `aphid_colony` (`src/lib/pests.ts`) | loopers, armyworms/cutworms, aphid colonies |
 | Head | One swivel axis, −170° to +170° (`src/lib/targeting.ts`) | Swivel ±90° plus tilt |
 | Scan | 72 photos: 12 pans × 3 heights × 2 angles incl. under-leaf (`src/lib/scan.ts`) | Stops over the two boxes only; see 16.4 #5 |
-| Camera FOV | 68° × 52° | Measure the real lens (blueprint estimate 60.3° × 47.1°) |
+| Camera FOV | Done: 60.3° × 47.1°, same as blueprint sheet 18 | Measure the real lens, then change `CAMERA` in `src/lib/targeting.ts` |
 | Manual spray | Done: hold to spray, release or **Stop spray** sends `stop` (Approval Sheet test 10) | Trigger and stop a manual spray |
 | Alerts | Done: pop-up within about 2 s of a new alert (Approval Sheet test 9) | Alerts arrive within 10 s |
 | Patrol schedule | Not in the app; the simulator scans non-stop | Day / dusk / night schedule set in the app, manual "Start patrol" (section 6.8, Thesis chapter Table 1.3) |
