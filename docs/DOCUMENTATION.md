@@ -556,7 +556,7 @@ Every request must send the header `x-device-key: <DEVICE_API_KEY>`. Optional `x
 
 `decision` is either `{ "action": "fire", "target": {...}, "aim": {pan, lift, swivel}, "burstMs": 400 }` or `{ "action": "hold", "reason": "cooldown", "target": {...} }`.
 
-Firmware loop *(planned)*: heartbeat → run any commands → move to next scan stop → capture → if `fire`, move to `aim`, run pump for `burstMs`, POST the spray, return to the scan stop → repeat.
+Firmware loop (`firmware/turret/`, not yet run on the ESP32): heartbeat every 2 s → run any commands → turn to the next patrol stop (12 × 4 photos, blueprint sheet 20) → capture → if `fire`: pump on, aim, send a confirm photo (extra form field `confirm=1`), and spray `burstMs` only if the confirm photo also says `fire` and is on target → POST the spray → next photo. The firmware sends `pan` = camera bearing, `swivel` = head tilt below level; details and safety rules in [`firmware/README.md`](../firmware/README.md).
 
 ### 10.2 App API
 | Method | Path | Purpose |
@@ -819,7 +819,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Change the scan path | `src/lib/scan.ts` |
 | Plug in the model | `src/lib/detector/`, `DETECTOR=http` |
 | Change the database | `src/lib/db.ts` (schema) + `src/lib/store.ts` (queries) |
-| Build the firmware | [Section 10.1](#101-device-api-used-by-the-esp32-firmware-and-the-simulator) — copy what `scripts/simulate.ts` does |
+| Change the firmware | `firmware/turret/` ([firmware/README.md](../firmware/README.md)); test with `bash firmware/turret/test/run.sh` |
 | Run everything | [Section 14.3](#143-running) |
 
 **Rules of thumb**
@@ -918,5 +918,5 @@ The confidence threshold in the app is then set from the validation results (the
 | Known issues, open questions, risk register | Done |
 | Increment plan and testing strategies | From the revised approval sheet, pending adviser approval |
 | Trained model and accuracy results | Pending (Increment 2) |
-| Firmware | Bring-up test in `firmware/bringup/`; main firmware pending |
+| Firmware | Bring-up test in `firmware/bringup/`; turret firmware in `firmware/turret/` (laptop-tested against the app; not yet run on the ESP32) |
 | Circuit design and prototype photos | Schematic v15 done (team Drive); prototype photos pending |
