@@ -13,8 +13,9 @@
 #              drops, holes without a pest). They teach the model when not to spray.
 
 sources:
-  # Roboflow Universe leo-bvosh/pest-s0hhq v1 (IP102 photos, 102 classes), YOLOv8 export,
-  # unzipped to training/raw/pest-s0hhq/. It has no looper class: get loopers elsewhere.
+  # Roboflow Universe leo-bvosh/pest-s0hhq v1 (IP102 photos, 96 classes, CC BY 4.0), YOLOv8
+  # export, unzipped to training/raw/pest-s0hhq/. It has no looper class: loopers come from
+  # the two sources below.
   pest-s0hhq:
     map:
       army worm: armyworm_cutworm
@@ -32,19 +33,21 @@ sources:
       toxoptera citricidus: aphid_colony
       aphis citricola vander goot: aphid_colony
 
-  roboflow-aphids:
+  # Roboflow Universe types-of-sports-ball/caterpillar_dataset (CC BY 4.0), YOLOv8 export,
+  # unzipped to training/raw/caterpillar-dataset/. Our main looper source; the other six
+  # caterpillars (monarch, swallowtail, ...) are not lettuce pests, so their photos are left out.
+  caterpillar-dataset:
     map:
-      aphid: aphid_colony
-      aphids: aphid_colony
-
-  roboflow-caterpillars:
-    map:
-      armyworm: armyworm_cutworm
-      cutworm: armyworm_cutworm
-      spodoptera litura: armyworm_cutworm
+      cabage looper: looper     # spelled this way in the dataset
       cabbage looper: looper
-      looper: looper
-      diamondback moth: null   # not one of our pests
+
+  # Roboflow Universe tanmaya/yolo_detection-lafjj (CC BY 4.0, cotton pests), YOLOv8 export,
+  # unzipped to training/raw/yolo-detection-lafjj/. Semi-loopers are loopers (same moth
+  # subfamily); bollworms are not armyworms, so they are dropped with the other classes.
+  yolo-detection-lafjj:
+    map:
+      semi looper: looper
+      aphids: aphid_colony
 
   our-garden-2026-10:
     map:

@@ -21,15 +21,32 @@ so the turret knows where to aim. The trained model is then served to the PestBl
 
 **Before you start**
 1. `Runtime → Change runtime type → T4 GPU`
-2. Build the dataset on a laptop with `python training/prepare_dataset.py --zip`
-3. Upload `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`
+2. Get the dataset in one of two ways (`DATA_SOURCE` in step 1):
+   - `'roboflow'` (default): the notebook downloads our Roboflow copies of the public datasets
+     and builds the dataset itself. Add your Roboflow private API key once as a Colab secret:
+     key icon on the left → **Add new secret** → name `ROBOFLOW_API_KEY`, paste the key,
+     turn on **Notebook access**. Never paste the key into a cell.
+   - `'drive_zip'`: build it on a laptop with `python training/prepare_dataset.py --zip`
+     and upload `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`.
 
 Then `Runtime → Run all`. Results are saved to `MyDrive/pestblaster/runs/<date-time>/`."""),
 
     ("markdown", "## 1. Settings"),
     ("code", """import os, sys
 
+DATA_SOURCE = 'roboflow'    # 'roboflow' = download and build here; 'drive_zip' = use dataset.zip from Drive
 DRIVE_ZIP  = '/content/drive/MyDrive/pestblaster/dataset.zip'
+DRIVE_MANIFEST = '/content/drive/MyDrive/pestblaster/manifest.json'  # keeps test photos in test across runs
+REPO_URL    = 'https://github.com/helidastar/PestBlaster.git'
+REPO_BRANCH = 'feat/AI'
+
+# Roboflow copies of the public datasets (all CC BY 4.0), downloaded in YOLOv8 format.
+# Folder name -> (workspace, project, version). The folder names match training/sources.example.yaml.
+ROBOFLOW_SOURCES = {
+    'caterpillar-dataset':  ('charitys-workspace-mgd6i', 'caterpillar_dataset-szb9v', 1),
+    'yolo-detection-lafjj': ('charitys-workspace-mgd6i', 'yolo_detection-lafjj-fjg3h', 1),
+    'pest-s0hhq':           ('charitys-workspace-mgd6i', 'pest-s0hhq-kbpwv', 1),
+}
 OUT_ROOT   = '/content/drive/MyDrive/pestblaster/runs'
 BASE_MODEL = 'yolo11n.pt'   # small and fast; try 'yolo11s.pt' if accuracy is too low
 EPOCHS     = 150
@@ -54,7 +71,7 @@ if not IN_COLAB:
     BASE_MODEL = os.environ.get('PB_BASE_MODEL', BASE_MODEL)
 print('Colab' if IN_COLAB else 'Local run', '| epochs', EPOCHS, '| image size', IMGSZ)"""),
 
-    ("markdown", "## 2. Mount Drive, unzip the dataset, install YOLO"),
+    ("markdown", "## 2. Mount Drive, get the dataset, install YOLO"),
     ("code", """import glob, subprocess, zipfile
 
 if IN_COLAB:
@@ -62,6 +79,35 @@ if IN_COLAB:
     from google.colab import drive
     drive.mount('/content/drive')
 
+if IN_COLAB and DATA_SOURCE == 'roboflow':
+    import shutil
+    from google.colab import userdata
+    try:
+        rf_key = userdata.get('ROBOFLOW_API_KEY')
+    except Exception:
+        raise RuntimeError('Add the Colab secret ROBOFLOW_API_KEY (key icon on the left) and turn on Notebook access.')
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'roboflow'], check=True)
+    repo = '/content/PestBlaster'
+    if not os.path.exists(repo):
+        subprocess.run(['git', 'clone', '-q', '--depth', '1', '-b', REPO_BRANCH, REPO_URL, repo], check=True)
+    from roboflow import Roboflow
+    rf = Roboflow(api_key=rf_key)
+    raw = os.path.join(repo, 'training', 'raw')
+    for folder, (ws, proj, ver) in ROBOFLOW_SOURCES.items():
+        dest = os.path.join(raw, folder)
+        if not os.path.exists(os.path.join(dest, 'data.yaml')):
+            rf.workspace(ws).project(proj).version(ver).download('yolov8', location=dest)
+    shutil.copy(os.path.join(repo, 'training', 'sources.example.yaml'), os.path.join(repo, 'training', 'sources.yaml'))
+    out = os.path.join(repo, 'training', 'dataset')
+    os.makedirs(out, exist_ok=True)
+    if os.path.exists(DRIVE_MANIFEST):   # earlier runs' splits, so the test set stays the same
+        shutil.copy(DRIVE_MANIFEST, os.path.join(out, 'manifest.json'))
+    subprocess.run([sys.executable, os.path.join(repo, 'training', 'prepare_dataset.py'), '--zip'], check=True)
+    os.makedirs(os.path.dirname(DRIVE_MANIFEST), exist_ok=True)
+    shutil.copy(os.path.join(out, 'manifest.json'), DRIVE_MANIFEST)
+    shutil.copy(os.path.join(repo, 'training', 'dataset.zip'), DRIVE_ZIP)   # same dataset for later runs
+    DATA_DIR = out
+elif IN_COLAB:
     # The expected path first, then anywhere in Drive.
     zip_path = DRIVE_ZIP if os.path.exists(DRIVE_ZIP) else None
     if not zip_path:

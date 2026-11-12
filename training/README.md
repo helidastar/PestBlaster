@@ -89,7 +89,9 @@ The script:
 
 ## 3. Train in Colab
 
-1. Upload `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`.
+1. Get the dataset to Colab, one of two ways (`DATA_SOURCE` in the notebook's step 1):
+   - **`'roboflow'` (default):** the notebook downloads our Roboflow copies of the three public datasets (looper, armyworm/cutworm and aphid photos, all CC BY 4.0, listed in `ROBOFLOW_SOURCES`), runs `prepare_dataset.py` with `sources.example.yaml`, and saves `dataset.zip` and `manifest.json` to `MyDrive/pestblaster/` so the test photos stay the same in later runs. Add the Roboflow private API key once as a Colab secret named `ROBOFLOW_API_KEY` (key icon on the left, turn on Notebook access).
+   - **`'drive_zip'`:** upload your own `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`.
 2. Open [`pestblaster_detector_colab.ipynb`](pestblaster_detector_colab.ipynb) in Colab (File → Upload notebook, or open it from GitHub).
 3. `Runtime → Change runtime type → T4 GPU`, then `Runtime → Run all`.
 
