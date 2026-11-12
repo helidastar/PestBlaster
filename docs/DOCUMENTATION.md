@@ -41,7 +41,7 @@
 | **School** | Cebu Institute of Technology – University |
 | **Adviser** | Engr. Nikko D. Alferez |
 | **Primary users** | Small-scale lettuce farm owners. The prototype is tested on two raised planter boxes. |
-| **Target pests** | Loopers, armyworms/cutworms, aphid clusters |
+| **Target pests** | Loopers, armyworms/cutworms, aphid colonies |
 | **Frontend + API** | Next.js 15 (App Router), React 19, TypeScript |
 | **Database** | SQLite (built into Node.js 22) — file in `data/` |
 | **Pest detection** | YOLO11n with OpenCV preprocessing on the Raspberry Pi 5, served by FastAPI + Ultralytics *(planned, Increment 2)*; a simulated detector stands in today |
@@ -121,7 +121,7 @@ Lettuce is grown on small-scale farms, but it is vulnerable to leaf-feeding pest
 **General objective:** design and develop PestBlaster, an autonomous pest detection and deterrence turret that protects lettuce crops by detecting leaf-feeding pests and immediately dispersing an organic deterrent.
 
 **Specific objectives** (from the (for approval) Main document)
-1. To design a machine vision pipeline, running on an on-board Raspberry Pi 5, that detects and classifies common lettuce leaf pests (loopers, armyworms/cutworms, and aphid clusters) using a YOLO11n model with OpenCV image processing.
+1. To design a machine vision pipeline, running on an on-board Raspberry Pi 5, that detects and classifies common lettuce leaf pests (loopers, armyworms/cutworms, and aphid colonies) using a YOLO11n model with OpenCV image processing.
 2. To develop a rotating turret mechanism with 360° rotation and a vertical scanning axis, controlled by an ESP32-S3 microcontroller, that can aim at a detected pest anywhere on the lettuce plant, from the top leaves down to soil level.
 3. To implement a valve/pump control system that releases timed organic deterrent bursts only after the Raspberry Pi confirms a pest target.
 4. To build a companion mobile app that lets farm owners monitor pest activity, view detection logs, and manage the system remotely.
@@ -315,7 +315,7 @@ The turret does not watch the plants all the time. It runs short patrols on a sc
 
 1. The turret homes itself so it knows where 0° is.
 2. It turns to a stop (12 stops, 30° apart; stops facing the walkway are skipped), waits for the arm to settle, and takes 4 photos: swivel left and right, each at two tilt angles.
-3. Each photo (640 × 480 JPEG) goes over Wi-Fi to the Raspberry Pi. YOLO11n checks it in about 0.1 s and returns a box, pest type and confidence for anything that looks like a looper, armyworm/cutworm or aphid cluster.
+3. Each photo (640 × 480 JPEG) goes over Wi-Fi to the Raspberry Pi. YOLO11n checks it in about 0.1 s and returns a box, pest type and confidence for anything that looks like a looper, armyworm/cutworm or aphid colony.
 4. No pest: go on to the next photo or stop. Pest: the Pi turns the box position into angles, the turret aims, takes one more photo to confirm, and if the pest is still there it sprays a 0.4 s burst (pump on, then valve).
 5. After the last stop the patrol ends and the turret parks until the next one.
 
@@ -803,7 +803,7 @@ The Increment 1 code was written before these changes. Work items for the app (`
 | Live view | None | Live camera view, scanning pauses while open *(planned, Increment 3)* |
 | Response time | Only capture and spray times are stored | Report software latency (capture, upload, detection, command) and mechanical latency (moving) separately (Approval Sheet test 11) |
 | Night patrols | Photos are not marked day or night | Mark IR photos so day and night accuracy can be compared (Approval Sheet test 7) |
-| Pest wording | "Aphid colony" | Thesis chapter Objective 1 and Definition of Terms say "aphid clusters"; the Approval Sheet and Table 1.2 say "colonies". Pick one |
+| Pest wording | "Aphid colony" everywhere in the repo (app, docs) | Same as the Approval Sheet and Table 1.2. The Thesis chapter Objective 1 and Definition of Terms still say "aphid clusters": change them there |
 | Device link | HTTP over the network | Same HTTP over the Pi hotspot; add the reconnect steps in section 6.9 to the firmware |
 
 ---
