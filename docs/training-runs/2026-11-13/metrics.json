@@ -1,0 +1,35 @@
+{
+  "overall": {
+    "precision": 0.888,
+    "recall": 0.891,
+    "mAP50": 0.913,
+    "mAP50_95": 0.572
+  },
+  "per_class": {
+    "looper": {
+      "precision": 0.931,
+      "recall": 0.94,
+      "mAP50": 0.932,
+      "mAP50_95": 0.685
+    },
+    "armyworm_cutworm": {
+      "precision": 0.934,
+      "recall": 0.938,
+      "mAP50": 0.948,
+      "mAP50_95": 0.591
+    },
+    "aphid_colony": {
+      "precision": 0.798,
+      "recall": 0.794,
+      "mAP50": 0.858,
+      "mAP50_95": 0.441
+    }
+  },
+  "suggested_confidence_threshold": 0.24,
+  "speed_ms_per_image": {
+    "preprocess": 4.1,
+    "inference": 10.0,
+    "loss": 0.0,
+    "postprocess": 5.3
+  }
+}
