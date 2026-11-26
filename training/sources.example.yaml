@@ -49,6 +49,16 @@ sources:
       semi looper: looper
       aphids: aphid_colony
 
+  # iNaturalist photos from fetch_inaturalist.py, after labeling them in Roboflow and
+  # exporting as YOLOv8 to training/raw/inaturalist-labeled/. Class names are already ours.
+  # The group keeps several photos of one observation in the same split.
+  inaturalist-labeled:
+    map:
+      looper: looper
+      armyworm_cutworm: armyworm_cutworm
+      aphid_colony: aphid_colony
+    group: '^inat_(\d+)_'
+
   our-garden-2026-10:
     map:
       looper: looper

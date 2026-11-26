@@ -46,7 +46,7 @@ Read each dataset's license before use; most allow academic use only, which fits
 | **Our own photos** (most important) | All three pests on real lettuce, leaf tops **and undersides**, at 10–20 cm, morning / noon / late afternoon | These match what the turret will see. Aim for at least half of the dataset. |
 | [Roboflow Universe](https://universe.roboflow.com) | Search "aphid", "armyworm", "cutworm", "spodoptera", "cabbage looper", "caterpillar" | Many are already labeled with boxes. Export as **YOLOv8**. Check each dataset's license and class names. |
 | [IP102](https://github.com/xpwu95/IP102) | Its detection subset has bounding boxes for 102 insect pests | Check its class list for aphids, loopers, armyworms and cutworms, and use only those. Academic use. |
-| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Spodoptera litura*, *Agrotis* spp., *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. Keep only CC-BY / CC0 photos and credit them. |
+| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Spodoptera litura*, *Agrotis* spp., *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. `python training/fetch_inaturalist.py --per-class 300` downloads CC0 / CC BY photos (larvae only for the caterpillars) into `training/raw/inaturalist/<class>/` and writes `credits.csv` for the thesis. Upload them to Roboflow, label, export as YOLOv8 and add the export as a source. |
 | **No-pest photos** | Healthy lettuce, bite holes without a pest, water drops, soil, bird droppings, leaf veins | Teaches the model when **not** to spray. Aim for about 10–20% of the dataset. |
 
 ### Taking our own photos
