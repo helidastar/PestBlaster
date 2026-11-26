@@ -9,8 +9,11 @@ What it does:
   2. Renames source classes to ours (looper, armyworm_cutworm, aphid_colony), drops the rest.
   3. Removes unreadable and tiny photos, broken label lines, and duplicates
      (including resized copies: the largest copy is kept).
-  4. Shrinks photos to --max-size on the longest side (labels are fractions, so they still fit).
-  5. Splits 70 / 20 / 10 into train / val / test, keeping each "group" (for example one
+  4. Joins aphid boxes that touch or nearly touch into one aphid_colony box, because many
+     public datasets box every single aphid while our rule is one box per colony
+     (--aphid-gap, 0 turns it off).
+  5. Shrinks photos to --max-size on the longest side (labels are fractions, so they still fit).
+  6. Splits 70 / 20 / 10 into train / val / test, keeping each "group" (for example one
      plant) in a single split. Splits are remembered in manifest.json, so a photo that was
      in test stays in test when you add more photos later.
 """
@@ -112,14 +115,24 @@ def parse_label(text: str, mapping: dict[int, int | None], where: str, report: R
         parts = raw.split()
         if not parts:
             continue
-        if len(parts) != 5:
-            report.warn(f"{where}:{n} is not 'class x y w h' (polygon labels are not supported), photo skipped")
-            return None
         try:
             src_cls = int(parts[0])
-            x, y, w, h = (float(v) for v in parts[1:])
+            nums = [float(v) for v in parts[1:]]
         except ValueError:
             report.warn(f"{where}:{n} has a non-number, photo skipped")
+            return None
+        if len(nums) == 4:
+            x, y, w, h = nums
+        elif len(nums) >= 6 and len(nums) % 2 == 0:
+            # Segmentation export (class x1 y1 x2 y2 ...): use the box around the outline.
+            xs, ys = nums[0::2], nums[1::2]
+            if not all(0 <= v <= 1 for v in nums):
+                report.warn(f"{where}:{n} outline is outside the photo, photo skipped")
+                return None
+            x, y = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+            w, h = max(xs) - min(xs), max(ys) - min(ys)
+        else:
+            report.warn(f"{where}:{n} is not 'class x y w h' or an outline 'class x1 y1 x2 y2 ...', photo skipped")
             return None
         if not all(0 <= v <= 1 for v in (x, y, w, h)) or w <= 0 or h <= 0:
             report.warn(f"{where}:{n} box is outside the photo, photo skipped")
@@ -188,6 +201,59 @@ def load_sources(config: dict, raw_dir: Path, report: Report) -> list[Item]:
             group = f"{name}/{m.group(1) if m and m.groups() else m.group(0)}" if m else f"{name}/{img.stem}"
             items.append(Item(source=name, path=img, boxes=boxes, group=group))
     return items
+
+
+# ---------- aphid colonies ----------
+
+APHID = CLASSES.index("aphid_colony")
+
+
+def merge_colonies(boxes: list[Box], gap: float) -> list[Box]:
+    """Join aphid boxes that are less than `gap` box-sizes apart into one colony box.
+
+    Each aphid box is grown by gap x its own width (left/right) and height (top/bottom);
+    boxes whose grown areas overlap belong to the same colony, also through a chain of
+    neighbours. The colony box is the smallest box around all its aphids. Other classes
+    are left unchanged. gap <= 0 returns the boxes as they are.
+    """
+    aphids = [b for b in boxes if b.cls == APHID]
+    if gap <= 0 or len(aphids) < 2:
+        return boxes
+    grown = [(b.x - b.w / 2 - gap * b.w, b.y - b.h / 2 - gap * b.h,
+              b.x + b.w / 2 + gap * b.w, b.y + b.h / 2 + gap * b.h) for b in aphids]
+    parent = list(range(len(aphids)))
+
+    def root(i: int) -> int:
+        while parent[i] != i:
+            parent[i] = parent[parent[i]]
+            i = parent[i]
+        return i
+
+    for i in range(len(aphids)):
+        for j in range(i + 1, len(aphids)):
+            a, b = grown[i], grown[j]
+            if a[0] <= b[2] and b[0] <= a[2] and a[1] <= b[3] and b[1] <= a[3]:
+                parent[root(i)] = root(j)
+    clusters: dict[int, list[Box]] = defaultdict(list)
+    for i, b in enumerate(aphids):
+        clusters[root(i)].append(b)
+    merged = []
+    for members in clusters.values():
+        x0 = min(b.x - b.w / 2 for b in members)
+        y0 = min(b.y - b.h / 2 for b in members)
+        x1 = max(b.x + b.w / 2 for b in members)
+        y1 = max(b.y + b.h / 2 for b in members)
+        merged.append(Box(APHID, (x0 + x1) / 2, (y0 + y1) / 2, x1 - x0, y1 - y0))
+    return [b for b in boxes if b.cls != APHID] + merged
+
+
+def merge_all_colonies(items: list[Item], gap: float, report: Report) -> None:
+    for it in items:
+        before = sum(b.cls == APHID for b in it.boxes)
+        it.boxes = merge_colonies(it.boxes, gap)
+        after = sum(b.cls == APHID for b in it.boxes)
+        if after < before:
+            report.dropped["aphid boxes joined into a colony box"] += before - after
 
 
 # ---------- checking photos ----------
@@ -406,6 +472,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--sources", type=Path, default=ROOT / "sources.yaml")
     ap.add_argument("--out", type=Path, default=DATASET_DIR)
     ap.add_argument("--max-size", type=int, default=1280, help="longest side of saved photos (default 1280)")
+    ap.add_argument("--aphid-gap", type=float, default=1.0,
+                    help="join aphid boxes closer than this many box-sizes into one colony box (default 1.0, 0 = off)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--dry-run", action="store_true", help="report only, write nothing")
     ap.add_argument("--zip", action="store_true", help="also write dataset.zip next to the dataset folder")
@@ -416,6 +484,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     report = Report()
     items = load_sources(yaml.safe_load(args.sources.read_text()), args.raw, report)
+    merge_all_colonies(items, args.aphid_gap, report)
     items = dedupe(inspect(items, report), report)
     if not items:
         print("No usable photos found.")

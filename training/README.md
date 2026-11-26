@@ -23,7 +23,7 @@ The model is a **YOLO object detector** (YOLO11n). A classifier would only say *
 |---|---|---|
 | 0 | `looper` | One box per looper, including the arched part |
 | 1 | `armyworm_cutworm` | One box per larva, tight around the body |
-| 2 | `aphid_colony` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. |
+| 2 | `aphid_colony` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. Public datasets that box every aphid are joined into colony boxes by `prepare_dataset.py` (`--aphid-gap`, default 1 aphid-width). |
 
 The order must match `PEST_TYPES` in `src/lib/pests.ts` (a test checks this).
 
@@ -46,7 +46,7 @@ Read each dataset's license before use; most allow academic use only, which fits
 | **Our own photos** (most important) | All three pests on real lettuce, leaf tops **and undersides**, at 10–20 cm, morning / noon / late afternoon | These match what the turret will see. Aim for at least half of the dataset. |
 | [Roboflow Universe](https://universe.roboflow.com) | Search "aphid", "armyworm", "cutworm", "spodoptera", "cabbage looper", "caterpillar" | Many are already labeled with boxes. Export as **YOLOv8**. Check each dataset's license and class names. |
 | [IP102](https://github.com/xpwu95/IP102) | Its detection subset has bounding boxes for 102 insect pests | Check its class list for aphids, loopers, armyworms and cutworms, and use only those. Academic use. |
-| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Spodoptera litura*, *Agrotis* spp., *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. Keep only CC-BY / CC0 photos and credit them. |
+| [iNaturalist](https://www.inaturalist.org) | Research-grade observations of *Spodoptera litura*, *Agrotis* spp., *Trichoplusia ni*, aphids | Real field photos, but no boxes: they must be labeled by us. `python training/fetch_inaturalist.py --per-class 300` downloads CC0 / CC BY photos (larvae only for the caterpillars) into `training/raw/inaturalist/<class>/` and writes `credits.csv` for the thesis. Upload them to Roboflow, label, export as YOLOv8 and add the export as a source. |
 | **No-pest photos** | Healthy lettuce, bite holes without a pest, water drops, soil, bird droppings, leaf veins | Teaches the model when **not** to spray. Aim for about 10–20% of the dataset. |
 
 ### Taking our own photos
@@ -90,7 +90,7 @@ The script:
 ## 3. Train in Colab
 
 1. Get the dataset to Colab, one of two ways (`DATA_SOURCE` in the notebook's step 1):
-   - **`'roboflow'` (default):** the notebook downloads our Roboflow copies of the three public datasets (looper, armyworm/cutworm and aphid photos, all CC BY 4.0, listed in `ROBOFLOW_SOURCES`), runs `prepare_dataset.py` with `sources.example.yaml`, and saves `dataset.zip` and `manifest.json` to `MyDrive/pestblaster/` so the test photos stay the same in later runs. Add the Roboflow private API key once as a Colab secret named `ROBOFLOW_API_KEY` (key icon on the left, turn on Notebook access).
+   - **`'roboflow'` (default):** the notebook downloads our Roboflow copies of the public datasets (looper, armyworm/cutworm and aphid photos; CC BY 4.0, one MIT; listed in `ROBOFLOW_SOURCES`), runs `prepare_dataset.py` with `sources.example.yaml`, and saves `dataset.zip` and `manifest.json` to `MyDrive/pestblaster/` so the test photos stay the same in later runs. Add the Roboflow private API key once as a Colab secret named `ROBOFLOW_API_KEY` (key icon on the left, turn on Notebook access).
    - **`'drive_zip'`:** upload your own `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`.
 2. Open [`pestblaster_detector_colab.ipynb`](pestblaster_detector_colab.ipynb) in Colab (File → Upload notebook, or open it from GitHub).
 3. `Runtime → Change runtime type → T4 GPU`, then `Runtime → Run all`.
