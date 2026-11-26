@@ -58,6 +58,48 @@ sources:
       aphid: aphid_colony
       whitefly: null
 
+  # Roboflow Universe uet-taxila-x6wdk/pest-detection-v9gfo (CC BY 4.0), 7,200 field photos,
+  # unzipped to training/raw/uet-pest-detection/. Sawflies, beetles, leafhoppers and
+  # grasshoppers are not our pests and are dropped.
+  uet-pest-detection:
+    map:
+      aphid: aphid_colony
+      armyworm: armyworm_cutworm
+
+  # Roboflow Universe esocfall/tobacco-cutworm (MIT licence), Spodoptera litura larvae,
+  # unzipped to training/raw/tobacco-cutworm/.
+  tobacco-cutworm:
+    map:
+      larva: armyworm_cutworm
+
+  # Roboflow Universe detection-xq3mv/pests-ux2g8 (CC BY 4.0), 11 pests, unzipped to
+  # training/raw/pests-ux2g8/. Only loopers and armyworms are kept.
+  pests-ux2g8:
+    map:
+      cabbage loopers: looper
+      armyworms: armyworm_cutworm
+      fall armyworms: armyworm_cutworm
+
+  # Roboflow Universe fall-armyworm/fall-armyworm (CC BY 4.0), maize field photos, unzipped
+  # to training/raw/fall-armyworm/. Only the larva boxes are kept; eggs, frass, damage and
+  # healthy-maize boxes are dropped (photos with only those are left out).
+  fall-armyworm:
+    map:
+      fall armyworm larva: armyworm_cutworm
+
+  # Roboflow Universe cruciferouscrops/cruciferous-pest (CC BY 4.0), pests on cabbage-family
+  # crops, segmentation outlines (prepare_dataset.py turns each outline into its box),
+  # unzipped to training/raw/cruciferous-pest/. Adult moths are dropped.
+  cruciferous-pest:
+    map:
+      cabbage looper - larva: looper
+      army worm: armyworm_cutworm
+      cabbage army worm: armyworm_cutworm
+      cutworm: armyworm_cutworm
+      tobacco caterpillar: armyworm_cutworm   # = Spodoptera litura larva
+      cabbage aphid: aphid_colony
+      mustard aphid: aphid_colony
+
   # iNaturalist photos from fetch_inaturalist.py, after labeling them in Roboflow and
   # exporting as YOLOv8 to training/raw/inaturalist-labeled/. Class names are already ours.
   # The group keeps several photos of one observation in the same split.

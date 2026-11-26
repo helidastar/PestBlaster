@@ -178,3 +178,18 @@ def test_build_joins_aphid_boxes(tmp_path):
     got = labels(tmp_path)
     assert len(got) == 10
     assert all(len(text.splitlines()) == 2 for _, text in got.values())
+
+
+def test_segmentation_outline_becomes_its_box():
+    report = prep.Report()
+    boxes = prep.parse_label("0 0.2 0.3 0.4 0.3 0.4 0.5 0.2 0.5\n", {0: L}, "x", report)
+    assert len(boxes) == 1
+    b = boxes[0]
+    assert (b.cls, b.x, b.y) == (L, pytest.approx(0.3), pytest.approx(0.4))
+    assert (b.w, b.h) == (pytest.approx(0.2), pytest.approx(0.2))
+
+
+def test_odd_number_of_values_is_rejected():
+    report = prep.Report()
+    assert prep.parse_label("0 0.2 0.3 0.4\n", {0: L}, "x", report) is None
+    assert report.warnings

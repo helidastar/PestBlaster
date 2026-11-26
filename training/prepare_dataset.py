@@ -115,14 +115,24 @@ def parse_label(text: str, mapping: dict[int, int | None], where: str, report: R
         parts = raw.split()
         if not parts:
             continue
-        if len(parts) != 5:
-            report.warn(f"{where}:{n} is not 'class x y w h' (polygon labels are not supported), photo skipped")
-            return None
         try:
             src_cls = int(parts[0])
-            x, y, w, h = (float(v) for v in parts[1:])
+            nums = [float(v) for v in parts[1:]]
         except ValueError:
             report.warn(f"{where}:{n} has a non-number, photo skipped")
+            return None
+        if len(nums) == 4:
+            x, y, w, h = nums
+        elif len(nums) >= 6 and len(nums) % 2 == 0:
+            # Segmentation export (class x1 y1 x2 y2 ...): use the box around the outline.
+            xs, ys = nums[0::2], nums[1::2]
+            if not all(0 <= v <= 1 for v in nums):
+                report.warn(f"{where}:{n} outline is outside the photo, photo skipped")
+                return None
+            x, y = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+            w, h = max(xs) - min(xs), max(ys) - min(ys)
+        else:
+            report.warn(f"{where}:{n} is not 'class x y w h' or an outline 'class x1 y1 x2 y2 ...', photo skipped")
             return None
         if not all(0 <= v <= 1 for v in (x, y, w, h)) or w <= 0 or h <= 0:
             report.warn(f"{where}:{n} box is outside the photo, photo skipped")
