@@ -134,3 +134,47 @@ def test_unknown_target_class_is_an_error(raw):
     (raw / "sources.yaml").write_text(yaml.safe_dump({"sources": {"rf": {"map": {"aphid": "grasshopper"}}}}))
     with pytest.raises(SystemExit):
         run(raw)
+
+
+# ---------- aphid colonies ----------
+
+A = CLASSES.index("aphid_colony")
+L = CLASSES.index("looper")
+
+
+def test_touching_aphids_become_one_colony_box():
+    boxes = [prep.Box(A, 0.30, 0.30, 0.02, 0.02), prep.Box(A, 0.33, 0.30, 0.02, 0.02),
+             prep.Box(A, 0.36, 0.31, 0.02, 0.02)]  # a chain, each 1 aphid-width from the next
+    out = prep.merge_colonies(boxes, 1.0)
+    assert len(out) == 1
+    b = out[0]
+    assert b.cls == A
+    assert b.x - b.w / 2 == pytest.approx(0.29) and b.x + b.w / 2 == pytest.approx(0.37)
+    assert b.y - b.h / 2 == pytest.approx(0.29) and b.y + b.h / 2 == pytest.approx(0.32)
+
+
+def test_far_apart_colonies_and_other_pests_stay_separate():
+    boxes = [prep.Box(A, 0.10, 0.10, 0.02, 0.02), prep.Box(A, 0.12, 0.10, 0.02, 0.02),
+             prep.Box(A, 0.80, 0.80, 0.02, 0.02), prep.Box(L, 0.11, 0.10, 0.10, 0.05)]
+    out = prep.merge_colonies(boxes, 1.0)
+    assert sum(b.cls == A for b in out) == 2
+    assert [b for b in out if b.cls == L] == [boxes[3]]
+
+
+def test_gap_zero_turns_merging_off():
+    boxes = [prep.Box(A, 0.30, 0.30, 0.02, 0.02), prep.Box(A, 0.31, 0.30, 0.02, 0.02)]
+    assert prep.merge_colonies(boxes, 0) == boxes
+
+
+def test_build_joins_aphid_boxes(tmp_path):
+    src = tmp_path / "raw" / "rf"
+    (src / "labels").mkdir(parents=True)
+    (src / "data.yaml").write_text(yaml.safe_dump({"names": ["Aphid"]}))
+    for i in range(10):
+        photo(src / "images" / f"p{i}.jpg", i)
+        (src / "labels" / f"p{i}.txt").write_text("0 0.50 0.50 0.04 0.04\n0 0.54 0.50 0.04 0.04\n0 0.10 0.10 0.04 0.04\n")
+    (tmp_path / "sources.yaml").write_text(yaml.safe_dump({"sources": {"rf": {"map": {"aphid": "aphid_colony"}}}}))
+    assert run(tmp_path) == 0
+    got = labels(tmp_path)
+    assert len(got) == 10
+    assert all(len(text.splitlines()) == 2 for _, text in got.values())

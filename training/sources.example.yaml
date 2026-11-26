@@ -49,6 +49,15 @@ sources:
       semi looper: looper
       aphids: aphid_colony
 
+  # Roboflow Universe puzzle-piece-detection/lettuce-pests (CC BY 4.0), aphids and whiteflies
+  # on lettuce, YOLOv8 export, unzipped to training/raw/lettuce-pests/. It boxes every single
+  # aphid; prepare_dataset.py joins touching aphids into one colony box (--aphid-gap).
+  # Whiteflies are not one of our pests, so they are dropped.
+  lettuce-pests:
+    map:
+      aphid: aphid_colony
+      whitefly: null
+
   # iNaturalist photos from fetch_inaturalist.py, after labeling them in Roboflow and
   # exporting as YOLOv8 to training/raw/inaturalist-labeled/. Class names are already ours.
   # The group keeps several photos of one observation in the same split.

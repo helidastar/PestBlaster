@@ -23,7 +23,7 @@ The model is a **YOLO object detector** (YOLO11n). A classifier would only say *
 |---|---|---|
 | 0 | `looper` | One box per looper, including the arched part |
 | 1 | `armyworm_cutworm` | One box per larva, tight around the body |
-| 2 | `aphid_colony` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. |
+| 2 | `aphid_colony` | One box around each **group** of aphids (not one per aphid). A single isolated aphid gets its own box. Public datasets that box every aphid are joined into colony boxes by `prepare_dataset.py` (`--aphid-gap`, default 1 aphid-width). |
 
 The order must match `PEST_TYPES` in `src/lib/pests.ts` (a test checks this).
 
@@ -90,7 +90,7 @@ The script:
 ## 3. Train in Colab
 
 1. Get the dataset to Colab, one of two ways (`DATA_SOURCE` in the notebook's step 1):
-   - **`'roboflow'` (default):** the notebook downloads our Roboflow copies of the three public datasets (looper, armyworm/cutworm and aphid photos, all CC BY 4.0, listed in `ROBOFLOW_SOURCES`), runs `prepare_dataset.py` with `sources.example.yaml`, and saves `dataset.zip` and `manifest.json` to `MyDrive/pestblaster/` so the test photos stay the same in later runs. Add the Roboflow private API key once as a Colab secret named `ROBOFLOW_API_KEY` (key icon on the left, turn on Notebook access).
+   - **`'roboflow'` (default):** the notebook downloads our Roboflow copies of the four public datasets (looper, armyworm/cutworm and aphid photos, plus aphids on lettuce; all CC BY 4.0, listed in `ROBOFLOW_SOURCES`), runs `prepare_dataset.py` with `sources.example.yaml`, and saves `dataset.zip` and `manifest.json` to `MyDrive/pestblaster/` so the test photos stay the same in later runs. Add the Roboflow private API key once as a Colab secret named `ROBOFLOW_API_KEY` (key icon on the left, turn on Notebook access).
    - **`'drive_zip'`:** upload your own `training/dataset.zip` to Google Drive at `MyDrive/pestblaster/dataset.zip`.
 2. Open [`pestblaster_detector_colab.ipynb`](pestblaster_detector_colab.ipynb) in Colab (File → Upload notebook, or open it from GitHub).
 3. `Runtime → Change runtime type → T4 GPU`, then `Runtime → Run all`.

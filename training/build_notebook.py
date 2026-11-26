@@ -46,6 +46,7 @@ ROBOFLOW_SOURCES = {
     'caterpillar-dataset':  ('charitys-workspace-mgd6i', 'caterpillar_dataset-szb9v', 1),
     'yolo-detection-lafjj': ('charitys-workspace-mgd6i', 'yolo_detection-lafjj-fjg3h', 1),
     'pest-s0hhq':           ('charitys-workspace-mgd6i', 'pest-s0hhq-kbpwv', 1),
+    'lettuce-pests':        ('charitys-workspace-mgd6i', 'lettuce-pests-zbudd', 1),   # aphids on lettuce
 }
 OUT_ROOT   = '/content/drive/MyDrive/pestblaster/runs'
 BASE_MODEL = 'yolo11n.pt'   # small and fast; try 'yolo11s.pt' if accuracy is too low
